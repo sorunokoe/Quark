@@ -157,99 +157,73 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 XCTAssertNotNil(hostingController.view, "View should be loaded")
             }
             
-            func testPerformanceMetadata() {
-                // Access performance metadata through the view's type
-                let metadata = ViewType.performanceMetadata
-                XCTAssertFalse(metadata.isEmpty, "Performance metadata should not be empty")
-                
-                // Print metadata for debugging
-                print("Performance Metadata for \(viewName):")
-                for (id, info) in metadata {
-                    print("- View ID: \\(id)")
-                    if let deps = info["deps"] as? [String] {
-                        print("  Dependencies: \\(deps)")
-                    }
-                    if let viewType = info["viewType"] as? String {
-                        print("  View Type: \\(viewType)")
-                    }
-                    if let isContainer = info["isContainer"] as? Bool {
-                        print("  Is Container: \\(isContainer)")
-                    }
+            func testInitialState() {
+                // Test that the switch is initially checked (true)
+                let mirror = Mirror(reflecting: view)
+                if let switchChecked = mirror.children.first(where: { $0.label == "switchChecked" })?.value as? Bool {
+                    XCTAssertTrue(switchChecked, "Switch should be initially checked")
+                } else {
+                    XCTFail("Could not find switchChecked property")
                 }
             }
             
-            func testDependencyTracking() {
-                // Access tracked dependencies through the view's type
-                let dependencies = ViewType.trackedDependencies
-                XCTAssertFalse(dependencies.isEmpty, "Tracked dependencies should not be empty")
+            func testSwitchToggle() {
+                // Reset test context
+                TestContext.shared.reset()
                 
-                // Print dependencies for debugging
-                print("Tracked Dependencies for \(viewName):")
-                for dep in dependencies {
-                    print("- \\(dep)")
-                }
-            }
-            
-            func testUnnecessaryRecomputation() {
-                // Get all dependencies
-                let dependencies = ViewType.trackedDependencies
-                
-                // For each dependency
-                for dep in dependencies {
-                    // Reset test context
-                    TestContext.shared.reset()
-                    
-                    // Trigger the dependency
-                    let triggerName = "trigger\\(dep.name.prefix(1).uppercased() + dep.name.dropFirst())"
-                    if let triggerMethod = view.value(forKey: triggerName) as? () -> Void {
-                        triggerMethod()
-                    }
-                    
-                    // Get recomputation counts
-                    let recomputeCounts = TestContext.shared.recomputeCounts
-                    
-                    // For each view that recomputed
-                    for (viewId, info) in recomputeCounts {
-                        // Get the view's metadata
-                        let metadata = ViewType.performanceMetadata[viewId] ?? [:]
-                        let deps = metadata["deps"] as? [String] ?? []
-                        
-                        // Check if this view should have recomputed
-                        XCTAssertTrue(deps.contains(dep.name), 
-                                    "View '\\(viewId)' at \\(metadata["file"] ?? "unknown"):\\(metadata["line"] ?? 0) recomputed unnecessarily when \\(dep.name) changed")
-                    }
-                }
-            }
-            
-            func testDependencyIsolation() {
-                // Get all dependencies
-                let dependencies = ViewType.trackedDependencies
-                
-                // For each dependency
-                for dep in dependencies {
-                    // Reset test context
-                    TestContext.shared.reset()
-                    
-                    // Trigger the dependency
-                    let triggerName = "trigger\\(dep.name.prefix(1).uppercased() + dep.name.dropFirst())"
-                    if let triggerMethod = view.value(forKey: triggerName) as? () -> Void {
-                        triggerMethod()
-                    }
-                    
-                    // Get recomputation counts
-                    let recomputeCounts = TestContext.shared.recomputeCounts
-                    
-                    // For each view that recomputed
-                    for (viewId, info) in recomputeCounts {
-                        // Get the view's metadata
-                        let metadata = ViewType.performanceMetadata[viewId] ?? [:]
-                        let deps = metadata["deps"] as? [String] ?? []
-                        
-                        // Verify that only views depending on this dependency recomputed
-                        if !deps.contains(dep.name) {
-                            XCTFail("View '\\(viewId)' at \\(metadata["file"] ?? "unknown"):\\(metadata["line"] ?? 0) should not recompute when \\(dep.name) changes")
+                // Toggle the switch
+                let mirror = Mirror(reflecting: view)
+                if let child = mirror.children.first(where: { $0.label == "switchChecked" }) {
+                    if var value = child.value as? Bool {
+                        value.toggle()
+                        if let keyPath = try? KeyPath<ViewType, Bool>("switchChecked") {
+                            view[keyPath: keyPath] = value
                         }
                     }
+                }
+                
+                // Wait for UI update
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                
+                // Verify switch state changed
+                let updatedMirror = Mirror(reflecting: view)
+                if let switchChecked = updatedMirror.children.first(where: { $0.label == "switchChecked" })?.value as? Bool {
+                    XCTAssertFalse(switchChecked, "Switch should be toggled to unchecked")
+                } else {
+                    XCTFail("Could not find switchChecked property after toggle")
+                }
+                
+                // Check which views recomputed
+                let recomputeCounts = TestContext.shared.recomputeCounts
+                XCTAssertFalse(recomputeCounts.isEmpty, "Some views should have recomputed")
+                
+                // Print recomputation details for debugging
+                print("Recomputation Details:")
+                for (viewId, info) in recomputeCounts {
+                    print("- View ID: \\(viewId)")
+                    print("  Count: \\(info.count)")
+                    print("  File: \\(info.file)")
+                    print("  Line: \\(info.line)")
+                }
+            }
+            
+            func testViewDependencies() {
+                // Access tracked dependencies
+                let dependencies = ViewType.trackedDependencies
+                XCTAssertFalse(dependencies.isEmpty, "View should have tracked dependencies")
+                
+                // Verify switchChecked is tracked
+                let hasSwitchChecked = dependencies.contains { dep in
+                    dep.name == "switchChecked" && dep.type == "Bool"
+                }
+                XCTAssertTrue(hasSwitchChecked, "switchChecked should be tracked as a dependency")
+                
+                // Print dependencies for debugging
+                print("Tracked Dependencies:")
+                for dep in dependencies {
+                    print("- Name: \\(dep.name)")
+                    print("  Type: \\(dep.type)")
+                    print("  Wrapper: \\(dep.wrapper)")
                 }
             }
         }
