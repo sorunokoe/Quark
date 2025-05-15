@@ -131,7 +131,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         @testable import \(target)
         @testable import Quark
         
-        final class \(viewName)PerformanceTests: XCTestCase {
+        @MainActor
+        final class \(viewName)PerformanceTests: XCTestCase, Sendable {
             typealias ViewType = \(viewName)
             var view: ViewType!
             var hostingController: UIHostingController<ViewType>!
