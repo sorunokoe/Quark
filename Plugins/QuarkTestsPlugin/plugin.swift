@@ -25,8 +25,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         let targetNames = testedTargets.compactMap { $0 as? SourceModuleTarget }.map { $0.name }
         print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
-        // Create the GeneratedTests directory in the test target
-        let outputDir = testTarget.directory.appending("GeneratedTests")
+        // Generate tests in the plugin's work directory
+        let outputDir = context.pluginWorkDirectory.appending("GeneratedTests")
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.string), withIntermediateDirectories: true)
         
         var commands: [Command] = []
@@ -35,6 +35,16 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         let testIndexContent = generateTestIndex(for: testedTargets)
         let testIndexPath = outputDir.appending("GeneratedTestsIndex.swift")
         try testIndexContent.write(to: URL(fileURLWithPath: testIndexPath.string), atomically: true, encoding: .utf8)
+        
+        // Add the index file to the output files
+        commands.append(
+            .buildCommand(
+                displayName: "Generate tests index",
+                executable: .init("/bin/echo"),
+                arguments: ["Generated tests index"],
+                outputFiles: [testIndexPath]
+            )
+        )
         
         // Scan files in all tested targets
         for testedTarget in testedTargets {
