@@ -130,7 +130,6 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         import SwiftUI
         @testable import \(target)
         @testable import Quark
-        @testable import Quark.QuarkTracker
         
         final class \(viewName)PerformanceTests: XCTestCase {
             typealias ViewType = \(viewName)
