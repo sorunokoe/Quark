@@ -9,7 +9,7 @@ import PackagePlugin
 import Foundation
 
 @main
-struct GeneratePerformanceTestsPlugin: BuildToolPlugin {
+struct QuarkTestsPlugin: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
         guard let sourceTarget = target as? SourceModuleTarget else { return [] }
         
