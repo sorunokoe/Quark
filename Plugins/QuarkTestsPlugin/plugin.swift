@@ -63,7 +63,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 
                 let viewName = file.url.deletingPathExtension().lastPathComponent
                 let testFilePath = outputDir.appending("\(viewName)PerformanceTests.swift")
-                let testContent = generateTestContent(for: viewName)
+                let testContent = generateTestContent(for: viewName, target: sourceTarget.name)
                 
                 try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
                 print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
@@ -124,10 +124,11 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         return testedTargets
     }
     
-    func generateTestContent(for viewName: String) -> String {
+    func generateTestContent(for viewName: String, target: String) -> String {
         """
         import XCTest
         import SwiftUI
+        @testable import \(target)
         
         final class \(viewName)PerformanceTests: XCTestCase {
             var view: \(viewName)!
