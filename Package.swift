@@ -20,7 +20,11 @@ let package = Package(
         .target(
             name: "Quark",
             dependencies: [
-                "QuarkMacros"
+                .target(name: "QuarkMacros")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("Macros"),
+                .enableExperimentalFeature("Macros")
             ]
         ),
         .macro(
@@ -30,11 +34,6 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
             ]
-        ),
-        .plugin(
-            name: "QuarkTestsPlugin",
-            capability: .buildTool(),
-            dependencies: []
         ),
         .testTarget(
             name: "QuarkTests",

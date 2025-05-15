@@ -5,10 +5,10 @@
 //  Created by Yeskendir Salgara on 15/05/2025.
 //
 
+import SwiftCompilerPlugin
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftCompilerPlugin
 import SwiftUI
 
 public struct TrackPerformanceMacro: MemberMacro {
@@ -18,7 +18,8 @@ public struct TrackPerformanceMacro: MemberMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let structDecl = declaration.as(StructDeclSyntax.self),
-              structDecl.inheritanceClause?.inheritedTypes.contains(where: { $0.type.description == "View" }) == true else {
+              structDecl.inheritanceClause?.inheritedTypes.contains(where: { $0.type.description == "View" }) == true
+        else {
             throw MacroError.notAView
         }
         
@@ -26,7 +27,8 @@ public struct TrackPerformanceMacro: MemberMacro {
         guard let bodyDecl = structDecl.members.members.first(where: { member in
             member.decl.as(VariableDeclSyntax.self)?.bindings.contains(where: { $0.pattern.description == "body" }) == true
         })?.decl.as(VariableDeclSyntax.self),
-              let bodyAccessor = bodyDecl.bindings.first?.accessorBlock?.accessors.as(CodeBlockSyntax.self) else {
+            let bodyAccessor = bodyDecl.bindings.first?.accessorBlock?.accessors.as(CodeBlockSyntax.self)
+        else {
             throw MacroError.noBodyFound
         }
         
@@ -38,9 +40,10 @@ public struct TrackPerformanceMacro: MemberMacro {
                     if let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
                        varDecl.attributes.contains(where: { attr in
                            attr.description.contains("@State") ||
-                           attr.description.contains("@Binding") ||
-                           attr.description.contains("@ObservedObject")
-                       }) {
+                               attr.description.contains("@Binding") ||
+                               attr.description.contains("@ObservedObject")
+                       })
+                    {
                         dependencies.append(pattern.identifier.text)
                     }
                 }
@@ -138,7 +141,7 @@ public struct TrackPerformanceMacro: MemberMacro {
                     ),
                     elseKeyword: ifStmt.elseKeyword,
                     elseBody: ifStmt.elseBody.map { elseBody in
-                        .codeBlock(try transformBody(
+                        try .codeBlock(transformBody(
                             elseBody.as(CodeBlockSyntax.self)!,
                             structName: structName,
                             dependencies: dependencies,
@@ -168,7 +171,8 @@ public struct TrackPerformanceMacro: MemberMacro {
         var usedDependencies: [String] = []
         func findDependencies(_ syntax: Syntax) {
             if let ident = syntax.as(IdentifierExprSyntax.self),
-               dependencies.contains(ident.identifier.text) {
+               dependencies.contains(ident.identifier.text)
+            {
                 usedDependencies.append(ident.identifier.text)
             }
             for child in syntax.children(viewMode: .sourceAccurate) {
@@ -211,9 +215,10 @@ enum MacroError: Error, CustomStringConvertible {
 }
 
 @main
-struct QuarkMacros: CompilerPlugin {
+struct QuarkMacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        TrackPerformanceMacro.self
+        TrackPerformanceMacro.self,
+        HelloMacro.self
     ]
 }
 
@@ -222,6 +227,12 @@ public struct TrackRecomputationsModifier: ViewModifier {
     let id: String
     let file: String
     let line: Int
+    
+    public init(id: String, file: String, line: Int) {
+        self.id = id
+        self.file = file
+        self.line = line
+    }
     
     public func body(content: Content) -> some View {
         content
