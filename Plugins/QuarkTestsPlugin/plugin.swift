@@ -129,6 +129,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         import XCTest
         import SwiftUI
         @testable import \(target)
+        @testable import Quark
+        @testable import Quark.QuarkTracker
         
         final class \(viewName)PerformanceTests: XCTestCase {
             typealias ViewType = \(viewName)
@@ -137,12 +139,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             
             override func setUp() {
                 super.setUp()
-                // Initialize view with required parameters
-                // Note: You may need to adjust these parameters based on your view's requirements
-                view = ViewType(
-                    style: .primary,
-                    action: {}
-                )
+                // Initialize view without parameters
+                view = ViewType()
                 hostingController = UIHostingController(rootView: view)
                 _ = hostingController.view // Force view load
             }
@@ -168,11 +166,15 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 print("Performance Metadata for \(viewName):")
                 for (id, info) in metadata {
                     print("- View ID: \\(id)")
-                    print("  File: \\(info.file)")
-                    print("  Line: \\(info.line)")
-                    print("  Dependencies: \\(info.deps)")
-                    print("  View Type: \\(info.viewType)")
-                    print("  Is Container: \\(info.isContainer)")
+                    if let deps = info["deps"] as? [String] {
+                        print("  Dependencies: \\(deps)")
+                    }
+                    if let viewType = info["viewType"] as? String {
+                        print("  View Type: \\(viewType)")
+                    }
+                    if let isContainer = info["isContainer"] as? Bool {
+                        print("  Is Container: \\(isContainer)")
+                    }
                 }
             }
             
@@ -201,7 +203,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                     if var count = mirror.value as? Int {
                         count += 1
                         // Use key path to update the value
-                        let keyPath = \\\\.count
+                        let keyPath = \\ViewType.count
                         view[keyPath: keyPath] = count
                     }
                 }
@@ -219,8 +221,6 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 print("Recomputation Details for \(viewName):")
                 for (viewId, info) in newCounts {
                     print("- View ID: \\(viewId)")
-                    print("  File: \\(info.file)")
-                    print("  Line: \\(info.line)")
                     print("  Count: \\(info.count)")
                 }
             }
@@ -238,7 +238,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                     if var isHidden = mirror.value as? Bool {
                         isHidden.toggle()
                         // Use key path to update the value
-                        let keyPath = \\\\.isHidden
+                        let keyPath = \\ViewType.isHidden
                         view[keyPath: keyPath] = isHidden
                     }
                 }
@@ -251,9 +251,10 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 
                 // Verify that only views depending on isHidden were recomputed
                 for (viewId, info) in newCounts {
-                    let expectedDeps = ViewType.performanceMetadata[viewId]?.deps ?? []
-                    XCTAssertTrue(expectedDeps.contains("isHidden"), 
-                                "View '\\(viewId)' at \\(info.file):\\(info.line) should only recompute when isHidden changes")
+                    let metadata = ViewType.performanceMetadata[viewId] ?? [:]
+                    let deps = metadata["deps"] as? [String] ?? []
+                    XCTAssertTrue(deps.contains("isHidden"), 
+                                "View '\\(viewId)' should only recompute when isHidden changes")
                 }
             }
         }
