@@ -29,6 +29,9 @@ let package = Package(
             swiftSettings: [
                 .enableUpcomingFeature("Macros"),
                 .enableExperimentalFeature("Macros"),
+            ],
+            plugins: [
+                .plugin(name: "QuarkTestsPlugin"),
             ]
         ),
         .macro(
@@ -45,10 +48,7 @@ let package = Package(
         ),
         .testTarget(
             name: "QuarkTests",
-            dependencies: ["Quark"],
-            plugins: [
-                .plugin(name: "QuarkTestsPlugin"),
-            ]
+            dependencies: ["Quark"]
         ),
     ]
 )

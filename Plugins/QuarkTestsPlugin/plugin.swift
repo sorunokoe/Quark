@@ -11,29 +11,34 @@ import Foundation
 @main
 struct QuarkTestsPlugin: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
-        guard let sourceTarget = target as? SourceModuleTarget else { return [] }
+        // Only run for the main target
+        guard let sourceTarget = target as? SourceModuleTarget, target.name == "Quark" else {
+            print("[QuarkTestsPlugin] Skipping target: \(target.name)")
+            return []
+        }
         
-        let outputDir = context.pluginWorkDirectory.appending("GeneratedTests")
-        try FileManager.default.createDirectory(atPath: outputDir.string, withIntermediateDirectories: true)
+        print("[QuarkTestsPlugin] Plugin started for target: \(target.name)")
+        let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
+        try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
         for file in sourceTarget.sourceFiles(withSuffix: ".swift") {
-            let content = try String(contentsOfFile: file.path.string)
-            guard content.contains("@TrackPerformance") else { continue }
+            print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
+            let content = try String(contentsOfFile: file.url.path)
             
-            let viewName = file.path.stem
-            let testFilePath = outputDir.appending("\(viewName)PerformanceTests.swift")
+            // Look for both the macro and its expanded form
+            guard content.contains("@TrackPerformance") || 
+                  content.contains("performanceMetadata") else { continue }
+            
+            print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
+            
+            let viewName = file.url.deletingPathExtension().lastPathComponent
+            let testFilePath = outputDir.appendingPathComponent("\(viewName)PerformanceTests.swift")
             let testContent = generateTestContent(for: viewName)
             
-            try testContent.write(toFile: testFilePath.string, atomically: true, encoding: .utf8)
-            
-            commands.append(.buildCommand(
-                displayName: "Generating performance tests for \(viewName)",
-                executable: try context.tool(named: "echo").path,
-                arguments: ["Generated tests for \(viewName)"],
-                outputFiles: [testFilePath]
-            ))
+            try testContent.write(to: testFilePath, atomically: true, encoding: .utf8)
+            print("[QuarkTestsPlugin] Generated test: \(testFilePath.path)")
         }
         
         return commands
@@ -45,50 +50,122 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         import SwiftUI
         import SwiftUIPerformanceTracker
         
-        class \(viewName)PerformanceTests: XCTestCase {
-            func test\(viewName)Performance() throws {
-                let view = \(viewName)()
-                let hostingController = UIHostingController(rootView: view)
+        final class \(viewName)PerformanceTests: XCTestCase {
+            var view: \(viewName)!
+            var hostingController: UIHostingController<\(viewName)>!
+            
+            override func setUp() {
+                super.setUp()
+                view = \(viewName)()
+                hostingController = UIHostingController(rootView: view)
                 _ = hostingController.view // Force view load
+            }
+            
+            override func tearDown() {
+                view = nil
+                hostingController = nil
+                super.tearDown()
+            }
+            
+            func testViewInitialization() {
+                XCTAssertNotNil(view, "View should be initialized")
+                XCTAssertNotNil(hostingController, "Hosting controller should be initialized")
+                XCTAssertNotNil(hostingController.view, "View should be loaded")
+            }
+            
+            func testPerformanceMetadata() {
+                // Verify that performance metadata exists
+                XCTAssertFalse(view.performanceMetadata.isEmpty, "Performance metadata should not be empty")
                 
-                // Access metadata
-                let metadata = \(viewName).performanceMetadata
+                // Print metadata for debugging
+                print("Performance Metadata for \(viewName):")
+                for (id, info) in view.performanceMetadata {
+                    print("- View ID: \\(id)")
+                    print("  File: \\(info.file)")
+                    print("  Line: \\(info.line)")
+                    print("  Dependencies: \\(info.deps)")
+                    print("  View Type: \\(info.viewType)")
+                    print("  Is Container: \\(info.isContainer)")
+                }
+            }
+            
+            func testDependencyTracking() {
+                // Verify that tracked dependencies exist
+                XCTAssertFalse(view.trackedDependencies.isEmpty, "Tracked dependencies should not be empty")
                 
-                // Use reflection to find properties
-                let mirror = Mirror(reflecting: view)
-                for child in mirror.children {
-                    guard let label = child.label,
-                          metadata.values.contains(where: { $0.contains(label) }) else { continue }
-                    
-                    TestContext.shared.reset()
-                    
-                    // Simulate dependency change
-                    // Note: Simplified; real implementation needs safer state modification
-                    let propertyWrapper = mirror.children.first { $0.label == label }
-                    if let value = propertyWrapper?.value {
-                        if value is Bool {
-                            // Use dynamic member lookup or KVO (simplified)
-                            let keyPath = \\\\.\\(label)
-                            let currentValue = view[keyPath: keyPath] as! Bool
-                            view[keyPath: keyPath] = !currentValue
-                        } else if value is Int {
-                            let keyPath = \\\\.\\(label)
-                            let currentValue = view[keyPath: keyPath] as! Int
-                            view[keyPath: keyPath] = currentValue + 1
-                        }
+                // Print dependencies for debugging
+                print("Tracked Dependencies for \(viewName):")
+                for dep in view.trackedDependencies {
+                    print("- \\(dep)")
+                }
+            }
+            
+            func testViewRecomputation() {
+                // Reset the test context
+                TestContext.shared.reset()
+                
+                // Get initial recomputation counts
+                let initialCounts = TestContext.shared.recomputeCounts
+                
+                // Simulate a state change that should trigger recomputation
+                // This will depend on the actual properties in your view
+                if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == "count" }) {
+                    if var count = mirror.value as? Int {
+                        count += 1
+                        // Use key path to update the value
+                        let keyPath = \\\\.count
+                        view[keyPath: keyPath] = count
                     }
-                    
-                    // Wait for UI update
-                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
-                    
-                    // Check recomputations
-                    let recomputedViews = TestContext.shared.recomputeCounts
-                    for (viewId, info) in recomputedViews {
-                        let expectedDeps = metadata[viewId] ?? []
-                        if !expectedDeps.contains(label) {
-                            XCTFail("View '\\(viewId)' at \\(info.file):\\(info.line) recomputed unnecessarily when '\\(label)' changed")
-                        }
+                }
+                
+                // Wait for UI update
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                
+                // Get new recomputation counts
+                let newCounts = TestContext.shared.recomputeCounts
+                
+                // Verify that some views were recomputed
+                XCTAssertFalse(newCounts.isEmpty, "Some views should have been recomputed")
+                
+                // Print recomputation details
+                print("Recomputation Details for \(viewName):")
+                for (viewId, info) in newCounts {
+                    print("- View ID: \\(viewId)")
+                    print("  File: \\(info.file)")
+                    print("  Line: \\(info.line)")
+                    print("  Count: \\(info.count)")
+                }
+            }
+            
+            func testUnnecessaryRecomputation() {
+                // Reset the test context
+                TestContext.shared.reset()
+                
+                // Get initial recomputation counts
+                let initialCounts = TestContext.shared.recomputeCounts
+                
+                // Simulate a state change that should NOT trigger recomputation
+                // This will depend on the actual properties in your view
+                if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == "isHidden" }) {
+                    if var isHidden = mirror.value as? Bool {
+                        isHidden.toggle()
+                        // Use key path to update the value
+                        let keyPath = \\\\.isHidden
+                        view[keyPath: keyPath] = isHidden
                     }
+                }
+                
+                // Wait for UI update
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                
+                // Get new recomputation counts
+                let newCounts = TestContext.shared.recomputeCounts
+                
+                // Verify that only views depending on isHidden were recomputed
+                for (viewId, info) in newCounts {
+                    let expectedDeps = view.performanceMetadata[viewId]?.deps ?? []
+                    XCTAssertTrue(expectedDeps.contains("isHidden"), 
+                                "View '\\(viewId)' at \\(info.file):\\(info.line) should only recompute when isHidden changes")
                 }
             }
         }
