@@ -11,7 +11,7 @@ let package = Package(
         .library(
             name: "Quark",
             targets: ["Quark"]
-        )
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
@@ -20,11 +20,11 @@ let package = Package(
         .target(
             name: "Quark",
             dependencies: [
-                .target(name: "QuarkMacros")
+                .target(name: "QuarkMacros"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("Macros"),
-                .enableExperimentalFeature("Macros")
+                .enableExperimentalFeature("Macros"),
             ]
         ),
         .macro(
@@ -35,9 +35,16 @@ let package = Package(
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
             ]
         ),
+        .plugin(
+            name: "QuarkTestsPlugin",
+            capability: .buildTool()
+        ),
         .testTarget(
             name: "QuarkTests",
-            dependencies: ["Quark"]
+            dependencies: ["Quark"],
+            plugins: [
+                .plugin(name: "QuarkTestsPlugin")
+            ]
         ),
     ]
 )

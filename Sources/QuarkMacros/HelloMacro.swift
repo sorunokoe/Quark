@@ -7,10 +7,3 @@ public struct HelloMacro: ExpressionMacro {
         return "print(\"Hello from macro!\")"
     }
 }
-
-//@main
-//struct HelloMacrosPlugin: CompilerPlugin {
-//    let providingMacros: [Macro.Type] = [
-//        HelloMacro.self
-//    ]
-//} 

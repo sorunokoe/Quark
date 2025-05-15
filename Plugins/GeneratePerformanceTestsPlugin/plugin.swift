@@ -20,7 +20,7 @@ struct GeneratePerformanceTestsPlugin: BuildToolPlugin {
         
         for file in sourceTarget.sourceFiles(withSuffix: ".swift") {
             let content = try String(contentsOfFile: file.path.string)
-            guard content.contains("#trackPerformance") else { continue }
+            guard content.contains("@TrackPerformance") else { continue }
             
             let viewName = file.path.stem
             let testFilePath = outputDir.appending("\(viewName)PerformanceTests.swift")
