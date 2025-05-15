@@ -5,11 +5,18 @@
 //  Created by Yeskendir Salgara on 15/05/2025.
 //
 
-import SwiftCompilerPlugin
+
 import SwiftSyntax
-import SwiftSyntaxBuilder
+//import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftUI
+import SwiftCompilerPlugin
+
+
+//public struct HelloMacro: ExpressionMacro {
+//    public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax, in context: some SwiftSyntaxMacros.MacroExpansionContext) throws -> SwiftSyntax.ExprSyntax {
+//        return "print(\"Hello from macro!\")"
+//    }
+//}
 
 public struct TrackPerformanceMacro: MemberMacro {
     public static func expansion(
@@ -24,7 +31,7 @@ public struct TrackPerformanceMacro: MemberMacro {
         }
         
         // Find the body property
-        guard let bodyDecl = structDecl.members.members.first(where: { member in
+        guard let bodyDecl = structDecl.memberBlock.members.first(where: { member in
             member.decl.as(VariableDeclSyntax.self)?.bindings.contains(where: { $0.pattern.description == "body" }) == true
         })?.decl.as(VariableDeclSyntax.self),
             let bodyAccessor = bodyDecl.bindings.first?.accessorBlock?.accessors.as(CodeBlockSyntax.self)
@@ -220,30 +227,4 @@ struct QuarkMacrosPlugin: CompilerPlugin {
         TrackPerformanceMacro.self,
         HelloMacro.self
     ]
-}
-
-// Add the ViewModifier for tracking recomputations
-public struct TrackRecomputationsModifier: ViewModifier {
-    let id: String
-    let file: String
-    let line: Int
-    
-    public init(id: String, file: String, line: Int) {
-        self.id = id
-        self.file = file
-        self.line = line
-    }
-    
-    public func body(content: Content) -> some View {
-        content
-            .onAppear {
-                print("View recomputation tracked - ID: \(id), File: \(file), Line: \(line)")
-            }
-    }
-}
-
-public extension View {
-    func trackRecomputations(id: String, file: String, line: Int) -> some View {
-        modifier(TrackRecomputationsModifier(id: id, file: file, line: line))
-    }
 }

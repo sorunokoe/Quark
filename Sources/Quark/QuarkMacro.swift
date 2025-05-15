@@ -7,7 +7,8 @@
 
 import SwiftUI
 
-@attached(member)
+//@attached(member)
+@freestanding(expression)
 public macro TrackPerformance() = #externalMacro(module: "QuarkMacros", type: "TrackPerformanceMacro")
 
 @freestanding(expression)
