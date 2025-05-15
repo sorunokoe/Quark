@@ -25,7 +25,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         let targetNames = testedTargets.compactMap { $0 as? SourceModuleTarget }.map { $0.name }
         print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
-        let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
+        // Generate tests in the test target's directory
+        let outputDir = testTarget.directory.appendingPathComponent("GeneratedTests")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
@@ -87,7 +88,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         """
         import XCTest
         import SwiftUI
-        import SwiftUIPerformanceTracker
+        @testable import TDSComponents
         
         final class \(viewName)PerformanceTests: XCTestCase {
             var view: \(viewName)!
