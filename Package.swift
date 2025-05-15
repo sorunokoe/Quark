@@ -7,10 +7,12 @@ import PackageDescription
 let package = Package(
     name: "Quark",
     platforms: [.iOS(.v16), .macOS(.v13)],
-    products: [.library(
-        name: "Quark",
-        targets: ["Quark"]
-    )],
+    products: [
+        .library(
+            name: "Quark",
+            targets: ["Quark"]
+        )
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
     ],
@@ -18,7 +20,7 @@ let package = Package(
         .target(
             name: "Quark",
             dependencies: [
-                .target(name: "QuarkMacros"),
+                "QuarkMacros"
             ]
         ),
         .macro(

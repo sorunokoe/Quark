@@ -211,7 +211,7 @@ enum MacroError: Error, CustomStringConvertible {
 }
 
 @main
-struct SwiftUIPerformanceTrackerMacrosPlugin: CompilerPlugin {
+struct QuarkMacros: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         TrackPerformanceMacro.self
     ]
