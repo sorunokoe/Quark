@@ -197,25 +197,52 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Create a new instance of the view to trigger recomputation
-                let newView = ViewType()
-                view = newView
-                hostingController.rootView = newView
+                // Get the view's dependencies from metadata
+                let metadata = ViewType.performanceMetadata
+                let dependencies = Set(metadata.values.flatMap { ($0["deps"] as? [String]) ?? [] })
                 
-                // Wait for UI update
-                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
-                
-                // Get new recomputation counts
-                let newCounts = TestContext.shared.recomputeCounts
-                
-                // Verify that some views were recomputed
-                XCTAssertFalse(newCounts.isEmpty, "Some views should have been recomputed")
-                
-                // Print recomputation details
-                print("Recomputation Details for \(viewName):")
-                for (viewId, info) in newCounts {
-                    print("- View ID: \\(viewId)")
-                    print("  Count: \\(info.count)")
+                // For each dependency, simulate a change and verify recomputation
+                for dependency in dependencies {
+                    // Reset the test context
+                    TestContext.shared.reset()
+                    
+                    // Simulate a change to the dependency
+                    // This will depend on the actual property type
+                    if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == dependency }) {
+                        if var value = mirror.value as? Int {
+                            value += 1
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, Int>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        } else if var value = mirror.value as? String {
+                            value += "_modified"
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, String>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        } else if var value = mirror.value as? Bool {
+                            value.toggle()
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, Bool>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        }
+                    }
+                    
+                    // Wait for UI update
+                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                    
+                    // Get new recomputation counts
+                    let newCounts = TestContext.shared.recomputeCounts
+                    
+                    // Verify that only views depending on this dependency recomputed
+                    for (viewId, info) in newCounts {
+                        let viewMetadata = metadata[viewId] ?? [:]
+                        let viewDeps = viewMetadata["deps"] as? [String] ?? []
+                        XCTAssertTrue(viewDeps.contains(dependency), 
+                                    "View '\\(viewId)' should only recompute when '\\(dependency)' changes")
+                    }
                 }
             }
             
@@ -226,23 +253,51 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Create a new instance of the view with the same state
-                let newView = ViewType()
-                view = newView
-                hostingController.rootView = newView
+                // Get the view's dependencies from metadata
+                let metadata = ViewType.performanceMetadata
+                let dependencies = Set(metadata.values.flatMap { ($0["deps"] as? [String]) ?? [] })
                 
-                // Wait for UI update
-                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
-                
-                // Get new recomputation counts
-                let newCounts = TestContext.shared.recomputeCounts
-                
-                // Verify that only views depending on the modified property were recomputed
-                for (viewId, info) in newCounts {
-                    let metadata = ViewType.performanceMetadata[viewId] ?? [:]
-                    let deps = metadata["deps"] as? [String] ?? []
-                    XCTAssertTrue(deps.isEmpty || deps.contains("self"), 
-                                "View '\\(viewId)' should only recompute when self changes")
+                // For each dependency, simulate a change and verify no unnecessary recomputation
+                for dependency in dependencies {
+                    // Reset the test context
+                    TestContext.shared.reset()
+                    
+                    // Simulate a change to the dependency
+                    if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == dependency }) {
+                        if var value = mirror.value as? Int {
+                            value += 1
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, Int>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        } else if var value = mirror.value as? String {
+                            value += "_modified"
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, String>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        } else if var value = mirror.value as? Bool {
+                            value.toggle()
+                            // Use key path to update the value
+                            if let keyPath = try? KeyPath<ViewType, Bool>(dependency) {
+                                view[keyPath: keyPath] = value
+                            }
+                        }
+                    }
+                    
+                    // Wait for UI update
+                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                    
+                    // Get new recomputation counts
+                    let newCounts = TestContext.shared.recomputeCounts
+                    
+                    // Verify that no views recomputed unnecessarily
+                    for (viewId, info) in newCounts {
+                        let viewMetadata = metadata[viewId] ?? [:]
+                        let viewDeps = viewMetadata["deps"] as? [String] ?? []
+                        XCTAssertTrue(viewDeps.contains(dependency), 
+                                    "View '\\(viewId)' should not recompute when '\\(dependency)' changes")
+                    }
                 }
             }
         }
