@@ -19,30 +19,15 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             return []
         }
         
-        // Find the TDSComponents target that this test target depends on
-        let tdsComponentsTarget = context.package.targets.first { target in
-            target.name == "TDSComponents" && testTarget.dependencies.contains { dep in
-                if case .target(let name) = dep {
-                    return name == "TDSComponents"
-                }
-                return false
-            }
-        }
-        
-        guard let tdsComponentsTarget = tdsComponentsTarget as? SourceModuleTarget else {
-            print("[QuarkTestsPlugin] Could not find TDSComponents target or it's not a source module target")
-            return []
-        }
-        
-        print("[QuarkTestsPlugin] Found TDSComponents target, scanning for views...")
+        print("[QuarkTestsPlugin] Scanning files in test target: \(testTarget.name)")
         
         let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
-        // Scan files in TDSComponents target
-        for file in tdsComponentsTarget.sourceFiles(withSuffix: ".swift") {
+        // Scan files in the test target
+        for file in testTarget.sourceFiles(withSuffix: ".swift") {
             print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
             let content = try String(contentsOfFile: file.url.path)
             
