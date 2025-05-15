@@ -57,8 +57,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 let content = try String(contentsOfFile: file.url.path)
                 
                 // Look for both the macro and its expanded form
-                guard content.contains("@TrackPerformance") || 
-                      content.contains("performanceMetadata") else { continue }
+                guard content.contains("@TrackPerformance") else { continue }
                 
                 print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
                 
