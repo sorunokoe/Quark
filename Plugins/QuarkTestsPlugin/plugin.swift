@@ -19,15 +19,23 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             return []
         }
         
-        print("[QuarkTestsPlugin] Scanning files in test target: \(testTarget.name)")
+        // Find the main target that this test target depends on
+        let mainTarget = findMainTarget(in: context.package, for: testTarget)
+        
+        guard let mainTarget = mainTarget as? SourceModuleTarget else {
+            print("[QuarkTestsPlugin] Could not find main target or it's not a source module target")
+            return []
+        }
+        
+        print("[QuarkTestsPlugin] Found main target: \(mainTarget.name), scanning for views...")
         
         let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
-        // Scan files in the test target
-        for file in testTarget.sourceFiles(withSuffix: ".swift") {
+        // Scan files in the main target
+        for file in mainTarget.sourceFiles(withSuffix: ".swift") {
             print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
             let content = try String(contentsOfFile: file.url.path)
             
@@ -46,6 +54,25 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         }
         
         return commands
+    }
+    
+    private func findMainTarget(in package: Package, for testTarget: SourceModuleTarget) -> Target? {
+        // First, try to find a target that matches the test target name without "Tests" suffix
+        let potentialMainTargetName = testTarget.name.replacingOccurrences(of: "Tests", with: "")
+        if let mainTarget = package.targets.first(where: { $0.name == potentialMainTargetName }) {
+            return mainTarget
+        }
+        
+        // If not found, look for targets that this test target depends on
+        for dependency in testTarget.dependencies {
+            if case .target(let name) = dependency {
+                if let mainTarget = package.targets.first(where: { $0.name == name }) {
+                    return mainTarget
+                }
+            }
+        }
+        
+        return nil
     }
     
     func generateTestContent(for viewName: String) -> String {
