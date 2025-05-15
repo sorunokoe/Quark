@@ -131,12 +131,18 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         @testable import \(target)
         
         final class \(viewName)PerformanceTests: XCTestCase {
-            var view: \(viewName)!
-            var hostingController: UIHostingController<\(viewName)>!
+            typealias ViewType = \(viewName)
+            var view: ViewType!
+            var hostingController: UIHostingController<ViewType>!
             
             override func setUp() {
                 super.setUp()
-                view = \(viewName)()
+                // Initialize view with required parameters
+                // Note: You may need to adjust these parameters based on your view's requirements
+                view = ViewType(
+                    style: .primary,
+                    action: {}
+                )
                 hostingController = UIHostingController(rootView: view)
                 _ = hostingController.view // Force view load
             }
@@ -154,12 +160,13 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             }
             
             func testPerformanceMetadata() {
-                // Verify that performance metadata exists
-                XCTAssertFalse(view.performanceMetadata.isEmpty, "Performance metadata should not be empty")
+                // Access performance metadata through the view's type
+                let metadata = ViewType.performanceMetadata
+                XCTAssertFalse(metadata.isEmpty, "Performance metadata should not be empty")
                 
                 // Print metadata for debugging
                 print("Performance Metadata for \(viewName):")
-                for (id, info) in view.performanceMetadata {
+                for (id, info) in metadata {
                     print("- View ID: \\(id)")
                     print("  File: \\(info.file)")
                     print("  Line: \\(info.line)")
@@ -170,12 +177,13 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             }
             
             func testDependencyTracking() {
-                // Verify that tracked dependencies exist
-                XCTAssertFalse(view.trackedDependencies.isEmpty, "Tracked dependencies should not be empty")
+                // Access tracked dependencies through the view's type
+                let dependencies = ViewType.trackedDependencies
+                XCTAssertFalse(dependencies.isEmpty, "Tracked dependencies should not be empty")
                 
                 // Print dependencies for debugging
                 print("Tracked Dependencies for \(viewName):")
-                for dep in view.trackedDependencies {
+                for dep in dependencies {
                     print("- \\(dep)")
                 }
             }
@@ -243,7 +251,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 
                 // Verify that only views depending on isHidden were recomputed
                 for (viewId, info) in newCounts {
-                    let expectedDeps = view.performanceMetadata[viewId]?.deps ?? []
+                    let expectedDeps = ViewType.performanceMetadata[viewId]?.deps ?? []
                     XCTAssertTrue(expectedDeps.contains("isHidden"), 
                                 "View '\\(viewId)' at \\(info.file):\\(info.line) should only recompute when isHidden changes")
                 }
