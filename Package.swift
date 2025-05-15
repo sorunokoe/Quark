@@ -6,7 +6,10 @@ import PackageDescription
 
 let package = Package(
     name: "Quark",
-    platforms: [.iOS(.v16), .macOS(.v13)],
+    platforms: [
+        .iOS("16.4"),
+        .macOS(.v13)
+    ],
     products: [
         .library(
             name: "Quark",
