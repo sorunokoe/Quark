@@ -326,8 +326,9 @@ private extension TrackPerformanceMacro {
         let bodyDecl = try generateBodyDeclaration(transformedBody)
         let metadataDecl = try generateMetadataDeclaration(metadata)
         let dependenciesDecl = try generateDependenciesDeclaration(dependencies)
+        let triggerDecls = try generateDependencyTriggers(dependencies)
         
-        return [DeclSyntax(bodyDecl), DeclSyntax(metadataDecl), DeclSyntax(dependenciesDecl)]
+        return [DeclSyntax(bodyDecl), DeclSyntax(metadataDecl), DeclSyntax(dependenciesDecl)] + triggerDecls
     }
     
     static func generateBodyDeclaration(_ transformedBody: CodeBlockSyntax) throws -> VariableDeclSyntax {
@@ -433,6 +434,49 @@ private extension TrackPerformanceMacro {
         return try VariableDeclSyntax(
             "static let trackedDependencies: [(name: String, type: String, wrapper: String)] = \(dependenciesArray)"
         )
+    }
+    
+    static func generateDependencyTriggers(_ dependencies: [(name: String, type: String, wrapper: String)]) throws -> [DeclSyntax] {
+        var triggerDecls: [DeclSyntax] = []
+        
+        for dep in dependencies {
+            let triggerName = "trigger\(dep.name.prefix(1).uppercased() + dep.name.dropFirst())"
+            let triggerFunc = try FunctionDeclSyntax(
+                """
+                func \(raw: triggerName)() {
+                    // Reset test context before triggering
+                    TestContext.shared.reset()
+                    
+                    // Trigger the dependency based on its type
+                    switch "\(raw: dep.type)" {
+                    case "Int":
+                        if var value = self.\(raw: dep.name) as? Int {
+                            value += 1
+                            self.\(raw: dep.name) = value
+                        }
+                    case "Bool":
+                        if var value = self.\(raw: dep.name) as? Bool {
+                            value.toggle()
+                            self.\(raw: dep.name) = value
+                        }
+                    case "String":
+                        if var value = self.\(raw: dep.name) as? String {
+                            value += "_modified"
+                            self.\(raw: dep.name) = value
+                        }
+                    default:
+                        print("Unsupported dependency type: \(raw: dep.type)")
+                    }
+                    
+                    // Wait for UI update
+                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                }
+                """
+            )
+            triggerDecls.append(DeclSyntax(triggerFunc))
+        }
+        
+        return triggerDecls
     }
 }
 
