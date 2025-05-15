@@ -25,8 +25,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         let targetNames = testedTargets.compactMap { $0 as? SourceModuleTarget }.map { $0.name }
         print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
-        // Generate tests in the plugin's work directory
-        let outputDir = context.pluginWorkDirectory.appending("GeneratedTests")
+        // Create the GeneratedTests directory in the test target
+        let outputDir = testTarget.directory.appending("GeneratedTests")
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.string), withIntermediateDirectories: true)
         
         var commands: [Command] = []
@@ -59,35 +59,17 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
                 print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
                 
-                // Add a command to copy the generated test to the test target
-                let destinationPath = testTarget.directory.appending("GeneratedTests").appending("\(viewName)PerformanceTests.swift")
+                // Add the generated test file to the output files
                 commands.append(
                     .buildCommand(
-                        displayName: "Copy generated test for \(viewName)",
-                        executable: .init("/bin/cp"),
-                        arguments: [
-                            testFilePath.string,
-                            destinationPath.string
-                        ],
-                        outputFiles: [destinationPath]
+                        displayName: "Generate performance test for \(viewName)",
+                        executable: .init("/bin/echo"),
+                        arguments: ["Generated test for \(viewName)"],
+                        outputFiles: [testFilePath]
                     )
                 )
             }
         }
-        
-        // Copy the test index file
-        let indexDestinationPath = testTarget.directory.appending("GeneratedTests").appending("GeneratedTestsIndex.swift")
-        commands.append(
-            .buildCommand(
-                displayName: "Copy generated tests index",
-                executable: .init("/bin/cp"),
-                arguments: [
-                    testIndexPath.string,
-                    indexDestinationPath.string
-                ],
-                outputFiles: [indexDestinationPath]
-            )
-        )
         
         return commands
     }
