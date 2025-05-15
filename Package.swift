@@ -12,6 +12,10 @@ let package = Package(
             name: "Quark",
             targets: ["Quark"]
         ),
+        .plugin(
+            name: "QuarkTestsPlugin",
+            targets: ["QuarkTestsPlugin"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
@@ -43,7 +47,7 @@ let package = Package(
             name: "QuarkTests",
             dependencies: ["Quark"],
             plugins: [
-                .plugin(name: "QuarkTestsPlugin")
+                .plugin(name: "QuarkTestsPlugin"),
             ]
         ),
     ]
