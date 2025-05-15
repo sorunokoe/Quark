@@ -197,14 +197,40 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Simulate a state change that should trigger recomputation
-                // This will depend on the actual properties in your view
-                if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == "count" }) {
-                    if var count = mirror.value as? Int {
-                        count += 1
+                // Find a property that can be modified
+                let mirror = Mirror(reflecting: view)
+                if let property = mirror.children.first(where: { child in
+                    // Look for properties that can be modified
+                    if let value = child.value as? Int {
+                        return true
+                    }
+                    if let value = child.value as? String {
+                        return true
+                    }
+                    if let value = child.value as? Bool {
+                        return true
+                    }
+                    return false
+                }) {
+                    // Modify the property based on its type
+                    if var value = property.value as? Int {
+                        value += 1
                         // Use key path to update the value
-                        let keyPath = \\ViewType.count
-                        view[keyPath: keyPath] = count
+                        if let keyPath = try? KeyPath<ViewType, Int>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
+                    } else if var value = property.value as? String {
+                        value += "_modified"
+                        // Use key path to update the value
+                        if let keyPath = try? KeyPath<ViewType, String>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
+                    } else if var value = property.value as? Bool {
+                        value.toggle()
+                        // Use key path to update the value
+                        if let keyPath = try? KeyPath<ViewType, Bool>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
                     }
                 }
                 
@@ -232,14 +258,40 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Simulate a state change that should NOT trigger recomputation
-                // This will depend on the actual properties in your view
-                if let mirror = Mirror(reflecting: view).children.first(where: { $0.label == "isHidden" }) {
-                    if var isHidden = mirror.value as? Bool {
-                        isHidden.toggle()
+                // Find a property that can be modified
+                let mirror = Mirror(reflecting: view)
+                if let property = mirror.children.first(where: { child in
+                    // Look for properties that can be modified
+                    if let value = child.value as? Int {
+                        return true
+                    }
+                    if let value = child.value as? String {
+                        return true
+                    }
+                    if let value = child.value as? Bool {
+                        return true
+                    }
+                    return false
+                }) {
+                    // Modify the property based on its type
+                    if var value = property.value as? Int {
+                        value += 1
                         // Use key path to update the value
-                        let keyPath = \\ViewType.isHidden
-                        view[keyPath: keyPath] = isHidden
+                        if let keyPath = try? KeyPath<ViewType, Int>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
+                    } else if var value = property.value as? String {
+                        value += "_modified"
+                        // Use key path to update the value
+                        if let keyPath = try? KeyPath<ViewType, String>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
+                    } else if var value = property.value as? Bool {
+                        value.toggle()
+                        // Use key path to update the value
+                        if let keyPath = try? KeyPath<ViewType, Bool>(property.label ?? "") {
+                            view[keyPath: keyPath] = value
+                        }
                     }
                 }
                 
@@ -249,12 +301,14 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get new recomputation counts
                 let newCounts = TestContext.shared.recomputeCounts
                 
-                // Verify that only views depending on isHidden were recomputed
+                // Verify that only views depending on the modified property were recomputed
                 for (viewId, info) in newCounts {
                     let metadata = ViewType.performanceMetadata[viewId] ?? [:]
                     let deps = metadata["deps"] as? [String] ?? []
-                    XCTAssertTrue(deps.contains("isHidden"), 
-                                "View '\\(viewId)' should only recompute when isHidden changes")
+                    if let property = mirror.children.first {
+                        XCTAssertTrue(deps.contains(property.label ?? ""), 
+                                    "View '\\(viewId)' should only recompute when \\(property.label ?? "property") changes")
+                    }
                 }
             }
         }
