@@ -11,19 +11,38 @@ import Foundation
 @main
 struct QuarkTestsPlugin: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
-        // Only run for the main target
-        guard let sourceTarget = target as? SourceModuleTarget, target.name == "Quark" else {
-            print("[QuarkTestsPlugin] Skipping target: \(target.name)")
+        print("[QuarkTestsPlugin] Plugin started for target: \(target.name)")
+        
+        // Get the test target that's using this plugin
+        guard let testTarget = target as? SourceModuleTarget else {
+            print("[QuarkTestsPlugin] Target is not a source module target")
             return []
         }
         
-        print("[QuarkTestsPlugin] Plugin started for target: \(target.name)")
+        // Find the TDSComponents target that this test target depends on
+        let tdsComponentsTarget = context.package.targets.first { target in
+            target.name == "TDSComponents" && testTarget.dependencies.contains { dep in
+                if case .target(let name) = dep {
+                    return name == "TDSComponents"
+                }
+                return false
+            }
+        }
+        
+        guard let tdsComponentsTarget = tdsComponentsTarget as? SourceModuleTarget else {
+            print("[QuarkTestsPlugin] Could not find TDSComponents target or it's not a source module target")
+            return []
+        }
+        
+        print("[QuarkTestsPlugin] Found TDSComponents target, scanning for views...")
+        
         let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
-        for file in sourceTarget.sourceFiles(withSuffix: ".swift") {
+        // Scan files in TDSComponents target
+        for file in tdsComponentsTarget.sourceFiles(withSuffix: ".swift") {
             print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
             let content = try String(contentsOfFile: file.url.path)
             
