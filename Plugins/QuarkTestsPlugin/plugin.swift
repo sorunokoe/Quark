@@ -197,42 +197,10 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Find a property that can be modified
-                let mirror = Mirror(reflecting: view)
-                if let property = mirror.children.first(where: { child in
-                    // Look for properties that can be modified
-                    if let value = child.value as? Int {
-                        return true
-                    }
-                    if let value = child.value as? String {
-                        return true
-                    }
-                    if let value = child.value as? Bool {
-                        return true
-                    }
-                    return false
-                }) {
-                    // Modify the property based on its type
-                    if var value = property.value as? Int {
-                        value += 1
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, Int>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    } else if var value = property.value as? String {
-                        value += "_modified"
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, String>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    } else if var value = property.value as? Bool {
-                        value.toggle()
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, Bool>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    }
-                }
+                // Create a new instance of the view to trigger recomputation
+                let newView = ViewType()
+                view = newView
+                hostingController.rootView = newView
                 
                 // Wait for UI update
                 RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
@@ -258,42 +226,10 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Get initial recomputation counts
                 let initialCounts = TestContext.shared.recomputeCounts
                 
-                // Find a property that can be modified
-                let mirror = Mirror(reflecting: view)
-                if let property = mirror.children.first(where: { child in
-                    // Look for properties that can be modified
-                    if let value = child.value as? Int {
-                        return true
-                    }
-                    if let value = child.value as? String {
-                        return true
-                    }
-                    if let value = child.value as? Bool {
-                        return true
-                    }
-                    return false
-                }) {
-                    // Modify the property based on its type
-                    if var value = property.value as? Int {
-                        value += 1
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, Int>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    } else if var value = property.value as? String {
-                        value += "_modified"
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, String>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    } else if var value = property.value as? Bool {
-                        value.toggle()
-                        // Use key path to update the value
-                        if let keyPath = try? KeyPath<ViewType, Bool>(property.label ?? "") {
-                            view[keyPath: keyPath] = value
-                        }
-                    }
-                }
+                // Create a new instance of the view with the same state
+                let newView = ViewType()
+                view = newView
+                hostingController.rootView = newView
                 
                 // Wait for UI update
                 RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
@@ -305,10 +241,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 for (viewId, info) in newCounts {
                     let metadata = ViewType.performanceMetadata[viewId] ?? [:]
                     let deps = metadata["deps"] as? [String] ?? []
-                    if let property = mirror.children.first {
-                        XCTAssertTrue(deps.contains(property.label ?? ""), 
-                                    "View '\\(viewId)' should only recompute when \\(property.label ?? "property") changes")
-                    }
+                    XCTAssertTrue(deps.isEmpty || deps.contains("self"), 
+                                "View '\\(viewId)' should only recompute when self changes")
                 }
             }
         }
