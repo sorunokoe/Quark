@@ -26,8 +26,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
         // Generate tests in the test target's directory
-        let outputDir = testTarget.directory.appendingPathComponent("GeneratedTests")
-        try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+        let outputDir = testTarget.directory.appending("GeneratedTests")
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.string), withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
@@ -48,11 +48,11 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
                 
                 let viewName = file.url.deletingPathExtension().lastPathComponent
-                let testFilePath = outputDir.appendingPathComponent("\(viewName)PerformanceTests.swift")
+                let testFilePath = outputDir.appending("\(viewName)PerformanceTests.swift")
                 let testContent = generateTestContent(for: viewName)
                 
-                try testContent.write(to: testFilePath, atomically: true, encoding: .utf8)
-                print("[QuarkTestsPlugin] Generated test: \(testFilePath.path)")
+                try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
             }
         }
         
