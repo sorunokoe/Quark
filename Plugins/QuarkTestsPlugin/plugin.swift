@@ -19,60 +19,68 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             return []
         }
         
-        // Find the main target that this test target depends on
-        let mainTarget = findMainTarget(in: context.package, for: testTarget)
+        // Find all targets that this test target depends on
+        let testedTargets = findTestedTargets(in: context.package, for: testTarget)
         
-        guard let mainTarget = mainTarget as? SourceModuleTarget else {
-            print("[QuarkTestsPlugin] Could not find main target or it's not a source module target")
-            return []
-        }
-        
-        print("[QuarkTestsPlugin] Found main target: \(mainTarget.name), scanning for views...")
+        let targetNames = testedTargets.compactMap { $0 as? SourceModuleTarget }.map { $0.name }
+        print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
         let outputDir = context.pluginWorkDirectoryURL.appendingPathComponent("GeneratedTests")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
-        // Scan files in the main target
-        for file in mainTarget.sourceFiles(withSuffix: ".swift") {
-            print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
-            let content = try String(contentsOfFile: file.url.path)
+        // Scan files in all tested targets
+        for testedTarget in testedTargets {
+            guard let sourceTarget = testedTarget as? SourceModuleTarget else { continue }
             
-            // Look for both the macro and its expanded form
-            guard content.contains("@TrackPerformance") || 
-                  content.contains("performanceMetadata") else { continue }
+            print("[QuarkTestsPlugin] Scanning files in target: \(sourceTarget.name)")
             
-            print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
-            
-            let viewName = file.url.deletingPathExtension().lastPathComponent
-            let testFilePath = outputDir.appendingPathComponent("\(viewName)PerformanceTests.swift")
-            let testContent = generateTestContent(for: viewName)
-            
-            try testContent.write(to: testFilePath, atomically: true, encoding: .utf8)
-            print("[QuarkTestsPlugin] Generated test: \(testFilePath.path)")
+            for file in sourceTarget.sourceFiles(withSuffix: ".swift") {
+                print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
+                let content = try String(contentsOfFile: file.url.path)
+                
+                // Look for both the macro and its expanded form
+                guard content.contains("@TrackPerformance") || 
+                      content.contains("performanceMetadata") else { continue }
+                
+                print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
+                
+                let viewName = file.url.deletingPathExtension().lastPathComponent
+                let testFilePath = outputDir.appendingPathComponent("\(viewName)PerformanceTests.swift")
+                let testContent = generateTestContent(for: viewName)
+                
+                try testContent.write(to: testFilePath, atomically: true, encoding: .utf8)
+                print("[QuarkTestsPlugin] Generated test: \(testFilePath.path)")
+            }
         }
         
         return commands
     }
     
-    private func findMainTarget(in package: Package, for testTarget: SourceModuleTarget) -> Target? {
-        // First, try to find a target that matches the test target name without "Tests" suffix
-        let potentialMainTargetName = testTarget.name.replacingOccurrences(of: "Tests", with: "")
-        if let mainTarget = package.targets.first(where: { $0.name == potentialMainTargetName }) {
-            return mainTarget
-        }
+    private func findTestedTargets(in package: Package, for testTarget: SourceModuleTarget) -> [Target] {
+        var testedTargets: [Target] = []
         
-        // If not found, look for targets that this test target depends on
+        // Get all dependencies of the test target
         for dependency in testTarget.dependencies {
-            if case .target(let name) = dependency {
-                if let mainTarget = package.targets.first(where: { $0.name == name }) {
-                    return mainTarget
+            switch dependency {
+            case .target(let target):
+                // Find the target in the package
+                if let target = package.targets.first(where: { $0.name == target.name }) {
+                    testedTargets.append(target)
                 }
+            case .product(let target):
+                // Find the product in the package
+                if let product = package.products.first(where: { $0.name == target.name }),
+                   let target = package.targets.first(where: { $0.name == product.name }) {
+                    testedTargets.append(target)
+                }
+            @unknown default:
+                assertionFailure("Didn't expect to have dependency \(dependency)")
             }
         }
         
-        return nil
+        return testedTargets
     }
     
     func generateTestContent(for viewName: String) -> String {
