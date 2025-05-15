@@ -1,21 +1,39 @@
+import CompilerPluginSupport
+
 // swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let package = Package(
     name: "Quark",
-    products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "Quark",
-            targets: ["Quark"]),
+    platforms: [.iOS(.v16), .macOS(.v13)],
+    products: [.library(
+        name: "Quark",
+        targets: ["Quark"]
+    )],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Quark"),
+            name: "Quark",
+            dependencies: [
+                .target(name: "QuarkMacros"),
+            ]
+        ),
+        .macro(
+            name: "QuarkMacros",
+            dependencies: [
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+            ]
+        ),
+        .plugin(
+            name: "QuarkTestsPlugin",
+            capability: .buildTool(),
+            dependencies: []
+        ),
         .testTarget(
             name: "QuarkTests",
             dependencies: ["Quark"]
