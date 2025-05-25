@@ -46,6 +46,9 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             )
         )
         
+        // Keep track of which test files we generate
+        var generatedTestFiles: Set<String> = []
+        
         // Scan files in all tested targets
         for testedTarget in testedTargets {
             guard let sourceTarget = testedTarget as? SourceModuleTarget else { continue }
@@ -69,6 +72,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
                 print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
                 
+                generatedTestFiles.insert(testFilePath.string)
+                
                 // Add the generated test file to the output files
                 commands.append(
                     .buildCommand(
@@ -78,6 +83,18 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                         outputFiles: [testFilePath]
                     )
                 )
+            }
+        }
+        
+        // Clean up old test files that are no longer needed
+        let fileManager = FileManager.default
+        if let existingFiles = try? fileManager.contentsOfDirectory(atPath: outputDir.string) {
+            for file in existingFiles {
+                let filePath = outputDir.appending(file).string
+                if file.hasSuffix("Tests.swift") && !generatedTestFiles.contains(filePath) {
+                    try? fileManager.removeItem(atPath: filePath)
+                    print("[QuarkTestsPlugin] Removed old test file: \(file)")
+                }
             }
         }
         
