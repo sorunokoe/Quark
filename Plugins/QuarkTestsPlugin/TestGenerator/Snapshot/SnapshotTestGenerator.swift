@@ -8,6 +8,9 @@
 import Foundation
 
 struct SnapshotTestGenerator: TestGenerator {
+    
+    var directory: String
+    
     func generateTests(for viewInfo: ViewInfo, target: String) -> String {
         """
         //
@@ -26,21 +29,38 @@ struct SnapshotTestGenerator: TestGenerator {
 
         @MainActor
         final class Quark\(viewInfo.name)SnapshotTests: XCTestCase {
-            func testSnapshot() {
-                let sut = \(viewInfo.initialization)
 
+            private var filePath: String { 
+                return "\(directory)/__Snapshots__/\(viewInfo.name)"
+            }
+        
+            func test\(viewInfo.name)Snapshot() {
+                let sut = \(viewInfo.initialization)
+                
                 // Test in light mode
-                assertSnapshot(
-                    matching: sut,
-                    as: .image(layout: .device(config: .iPhone13))
+                var failure = verifySnapshot(
+                    of: sut,
+                    as: .image(layout: .device(config: .iPhone13)),
+                    named: "light",
+                    snapshotDirectory: filePath,
+                    testName: "\(viewInfo.name)_snapshot"
                 )
+                guard let message = failure else { return }
+                XCTFail(message)
 
                 // Test in dark mode
-                assertSnapshot(
-                    matching: sut
-                        .preferredColorScheme(.dark),
-                    as: .image(layout: .device(config: .iPhone13))
+                
+                let darkSut = NavigationView { sut }.environment(\\.colorScheme, .dark)
+        
+                failure = verifySnapshot(
+                    of: darkSut,
+                    as: .image(layout: .device(config: .iPhone13)),
+                    named: "dark",
+                    snapshotDirectory: filePath,
+                    testName: "\(viewInfo.name)_snapshot"
                 )
+                guard let message = failure else { return }
+                XCTFail(message)
             }
         }
         """

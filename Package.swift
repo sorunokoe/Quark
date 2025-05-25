@@ -25,6 +25,10 @@ let package = Package(
         )
     ],
     dependencies: [
+        .package(
+            url: "https://github.com/pointfreeco/swift-snapshot-testing",
+            from: "1.18.3"
+        ),
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
         .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.10.1")
     ],
@@ -39,7 +43,8 @@ let package = Package(
             name: "QuarkTesting",
             dependencies: [
                 .target(name: "Quark"),
-                .product(name: "ViewInspector", package: "ViewInspector")
+                .product(name: "ViewInspector", package: "ViewInspector"),
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
             ]
         ),
         .macro(
