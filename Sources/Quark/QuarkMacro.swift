@@ -7,6 +7,6 @@
 
 import SwiftUI
 
-@attached(member, names: arbitrary)
-public macro QuarkLocalize() = #externalMacro(module: "QuarkMacros", type: "QuarkLocalizeMacro")
+@freestanding(expression)
+public macro QuarkLocalize<T: View>(_ view: T) -> T = #externalMacro(module: "QuarkMacros", type: "QuarkLocalizeMacro")
 

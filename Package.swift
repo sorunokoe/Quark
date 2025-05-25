@@ -38,6 +38,7 @@ let package = Package(
         .target(
             name: "QuarkTesting",
             dependencies: [
+                .target(name: "Quark"),
                 .product(name: "ViewInspector", package: "ViewInspector")
             ]
         ),

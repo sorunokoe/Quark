@@ -60,16 +60,16 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 let content = try String(contentsOfFile: file.url.path)
                 
                 // Look for both the macro and its expanded form
-                guard content.contains("@QuarkLocalize") else { continue }
+                guard content.contains("#QuarkLocalize") else { continue }
                 
                 print("[QuarkTestsPlugin] Found localization tracking in: \(file.url.lastPathComponent)")
                 
                 // Extract all view names from the file content
-                let viewNames = extractViewNames(from: content)
+                let viewInfo = extractViewNames(from: content)
                 
-                for viewName in viewNames {
+                for (viewName, initialization) in viewInfo {
                     let testFilePath = outputDir.appending("\(viewName)Tests.swift")
-                    let testContent = generateLocalizationTestContent(for: viewName, target: sourceTarget.name)
+                    let testContent = generateLocalizationTestContent(for: viewName, initialization: initialization, target: sourceTarget.name)
                     
                     try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
                     print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
@@ -146,7 +146,91 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         return testedTargets
     }
     
-    private func generateLocalizationTestContent(for viewName: String, target: String) -> String {
+    private func extractViewNames(from content: String) -> [(name: String, initialization: String)] {
+        var viewInfo: [(name: String, initialization: String)] = []
+        let lines = content.components(separatedBy: .newlines)
+        
+        print("[QuarkTestsPlugin] Extracting view names from content with \(lines.count) lines")
+        
+        var currentMacroContent: String = ""
+        var isCollectingMacroContent = false
+        var parenthesesCount = 0
+        var macroStartIndex = 0
+        
+        // First, find all struct definitions
+        var structDefinitions: [(name: String, lineIndex: Int)] = []
+        for (index, line) in lines.enumerated() {
+            if line.contains("struct") && line.contains(": View") {
+                let components = line.components(separatedBy: "struct")
+                if components.count > 1 {
+                    let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
+                    structDefinitions.append((name: nameComponent, lineIndex: index))
+                    print("[QuarkTestsPlugin] Found struct definition: \(nameComponent) at line \(index)")
+                }
+            }
+        }
+        
+        // Then process macro usages
+        for (index, line) in lines.enumerated() {
+            if line.contains("#QuarkLocalize") {
+                print("[QuarkTestsPlugin] Found QuarkLocalize macro in line: \(line)")
+                isCollectingMacroContent = true
+                currentMacroContent = ""
+                macroStartIndex = index
+                
+                // Extract the view initialization code
+                let startIndex = line.range(of: "#QuarkLocalize")?.upperBound ?? line.startIndex
+                let remainingText = String(line[startIndex...]).trimmingCharacters(in: .whitespaces)
+                print("[QuarkTestsPlugin] Remaining text after macro: \(remainingText)")
+                
+                // Count parentheses in the first line
+                parenthesesCount = remainingText.filter { $0 == "(" }.count - remainingText.filter { $0 == ")" }.count
+                currentMacroContent = remainingText
+                
+                // If no parentheses in first line, continue to next line
+                if !remainingText.contains("(") {
+                    continue
+                }
+            } else if isCollectingMacroContent {
+                // Count parentheses in subsequent lines
+                parenthesesCount += line.filter { $0 == "(" }.count - line.filter { $0 == ")" }.count
+                currentMacroContent += "\n" + line
+                
+                // If we've closed all parentheses, process the content
+                if parenthesesCount == 0 {
+                    print("[QuarkTestsPlugin] Completed macro content: \(currentMacroContent)")
+                    
+                    // Extract the initialization code
+                    let initialization = currentMacroContent
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .replacingOccurrences(of: "^\\(|\\)$", with: "", options: .regularExpression)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    print("[QuarkTestsPlugin] Extracted initialization: \(initialization)")
+                    
+                    // Extract the view name from the initialization
+                    if let viewName = initialization.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces) {
+                        print("[QuarkTestsPlugin] Looking for struct definition for view: \(viewName)")
+                        
+                        // Find the matching struct definition
+                        if let structDef = structDefinitions.first(where: { $0.name == viewName }) {
+                            print("[QuarkTestsPlugin] Found matching struct: \(structDef.name)")
+                            viewInfo.append((name: structDef.name, initialization: initialization))
+                        } else {
+                            print("[QuarkTestsPlugin] No matching struct found for view: \(viewName)")
+                        }
+                    }
+                    
+                    isCollectingMacroContent = false
+                }
+            }
+        }
+        
+        print("[QuarkTestsPlugin] Extracted view info: \(viewInfo)")
+        return viewInfo
+    }
+    
+    private func generateLocalizationTestContent(for viewName: String, initialization: String, target: String) -> String {
         """
         //
         //  \(viewName)Tests.swift
@@ -160,6 +244,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         import SwiftUI
         import ViewInspector
         import XCTest
+        import Quark
 
         @MainActor
         final class Quark\(viewName)L10nTests: XCTestCase {
@@ -171,11 +256,13 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 #endif
                 
                 let supportedLocales = bundle.localizations
-                let sut = \(viewName)()
+                let sut = \(initialization)
 
                 do {
                     let parent = try sut.inspect().implicitAnyView()
-                    let textElements = parent.findAll(ViewType.Text.self)
+                    let textElements = parent.findAll(ViewType.Text.self) { view in
+                        (try? view.modifier(NoLocalizationNeeded.self)) == nil
+                    }
                     for locale in supportedLocales {
                         let stringsPath = bundle.path(forResource: "Localizable",
                                                       ofType: "strings",
@@ -199,27 +286,5 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             }
         }
         """
-    }
-    
-    private func extractViewNames(from content: String) -> [String] {
-        var viewNames: [String] = []
-        let lines = content.components(separatedBy: .newlines)
-        
-        for (index, line) in lines.enumerated() {
-            if line.contains("@QuarkLocalize") {
-                // Look for the next struct definition that conforms to View
-                for nextLine in lines[index...] {
-                    if nextLine.contains("struct") && nextLine.contains(": View") {
-                        let components = nextLine.components(separatedBy: "struct")
-                        if components.count > 1 {
-                            let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
-                            viewNames.append(nameComponent)
-                            break
-                        }
-                    }
-                }
-            }
-        }
-        return viewNames
     }
 }

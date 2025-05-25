@@ -1,107 +1,20 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-public struct QuarkLocalizeMacro: MemberMacro {
+public struct QuarkLocalizeMacro: ExpressionMacro {
     public static func expansion(
-        of node: AttributeSyntax,
-        providingMembersOf declaration: some DeclGroupSyntax,
+        of node: some FreestandingMacroExpansionSyntax,
         in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
-        // Add a static property to store string information
-        return [
-            """
-            static var _quarkStringInfo: [(value: String, line: Int, context: String)] = []
-            """
-        ]
-    }
-}
-
-// Extension to handle View protocol conformance
-extension QuarkLocalizeMacro: ExtensionMacro {
-    public static func expansion(
-        of node: AttributeSyntax,
-        attachedTo declaration: some DeclGroupSyntax,
-        providingExtensionsOf type: some TypeSyntaxProtocol,
-        conformingTo protocols: [TypeSyntax],
-        in context: some MacroExpansionContext
-    ) throws -> [ExtensionDeclSyntax] {
-        // Find the body property
-        guard let structDecl = declaration.as(StructDeclSyntax.self) else {
-            throw MacroError.notAView
+    ) throws -> ExprSyntax {
+        // Get the view expression from the macro arguments
+        guard let viewExpr = node.argumentList.first?.expression else {
+            throw MacroError.noViewExpression
         }
         
-        var stringInfo: [(value: String, line: Int, context: String)] = []
+        // Transform the view expression to handle string localization
+        let (transformedExpr, _) = try transformExpression(viewExpr, context: context)
         
-        // Find the body property
-        for member in structDecl.memberBlock.members {
-            if let varDecl = member.decl.as(VariableDeclSyntax.self) {
-                for binding in varDecl.bindings {
-                    if let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
-                       pattern.identifier.text == "body" {
-                        // Transform the body
-                        if let accessorBlock = binding.accessorBlock {
-                            let transformedBody = try transformBody(
-                                accessorBlock,
-                                stringInfo: &stringInfo,
-                                context: context
-                            )
-                            
-                            // Create the extension with the transformed body
-                            return [
-                                try ExtensionDeclSyntax(
-                                    extendedType: type,
-                                    memberBlock: MemberBlockSyntax {
-                                        MemberBlockItemSyntax(
-                                            decl: VariableDeclSyntax(
-                                                bindingSpecifier: .keyword(.var),
-                                                bindings: [
-                                                    PatternBindingSyntax(
-                                                        pattern: pattern,
-                                                        typeAnnotation: binding.typeAnnotation,
-                                                        accessorBlock: transformedBody
-                                                    )
-                                                ]
-                                            )
-                                        )
-                                    }
-                                )
-                            ]
-                        }
-                    }
-                }
-            }
-        }
-        
-        throw MacroError.noBodyFound
-    }
-    
-    private static func transformBody(
-        _ body: AccessorBlockSyntax,
-        stringInfo: inout [(value: String, line: Int, context: String)],
-        context: some MacroExpansionContext
-    ) throws -> AccessorBlockSyntax {
-        var newStatements: [CodeBlockItemSyntax] = []
-        
-        for statement in body.accessors.children(viewMode: .sourceAccurate) {
-            if let item = statement.as(CodeBlockItemSyntax.self) {
-                if let expr = item.item.as(ExprSyntax.self) {
-                    let (transformedExpr, newStringInfo) = try transformExpression(
-                        expr,
-                        context: context
-                    )
-                    stringInfo.append(contentsOf: newStringInfo)
-                    newStatements.append(CodeBlockItemSyntax(item: .expr(transformedExpr)))
-                } else {
-                    newStatements.append(item)
-                }
-            }
-        }
-        
-        return AccessorBlockSyntax(
-            leftBrace: body.leftBrace,
-            accessors: .getter(CodeBlockItemListSyntax(newStatements)),
-            rightBrace: body.rightBrace
-        )
+        return transformedExpr
     }
     
     private static func transformExpression(
@@ -165,13 +78,11 @@ extension QuarkLocalizeMacro: ExtensionMacro {
 
 // MARK: - Errors
 enum MacroError: Error, CustomStringConvertible {
-    case notAView
-    case noBodyFound
+    case noViewExpression
     
     var description: String {
         switch self {
-        case .notAView: return "Macro can only be applied to structs conforming to View"
-        case .noBodyFound: return "View must have a body property"
+        case .noViewExpression: return "No view expression provided to QuarkLocalize macro"
         }
     }
 }

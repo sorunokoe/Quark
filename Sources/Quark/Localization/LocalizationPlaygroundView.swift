@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-@QuarkLocalize
 struct LocalizationPlaygroundView: View {
     var body: some View {
         Text("Hello, World!")
