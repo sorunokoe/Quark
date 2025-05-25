@@ -5,8 +5,8 @@
 //  Created by Yeskendir Salgara on 15/05/2025.
 //
 
-import PackagePlugin
 import Foundation
+import PackagePlugin
 
 @main
 struct QuarkTestsPlugin: BuildToolPlugin {
@@ -57,13 +57,13 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 let content = try String(contentsOfFile: file.url.path)
                 
                 // Look for both the macro and its expanded form
-                guard content.contains("@TrackPerformance") else { continue }
+                guard content.contains("@QuarkLocalize") else { continue }
                 
-                print("[QuarkTestsPlugin] Found performance tracking in: \(file.url.lastPathComponent)")
+                print("[QuarkTestsPlugin] Found localization tracking in: \(file.url.lastPathComponent)")
                 
                 let viewName = file.url.deletingPathExtension().lastPathComponent
-                let testFilePath = outputDir.appending("\(viewName)PerformanceTests.swift")
-                let testContent = generateTestContent(for: viewName, target: sourceTarget.name)
+                let testFilePath = outputDir.appending("\(viewName)LocalizationTests.swift")
+                let testContent = generateLocalizationTestContent(for: viewName, target: sourceTarget.name)
                 
                 try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
                 print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
@@ -71,7 +71,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 // Add the generated test file to the output files
                 commands.append(
                     .buildCommand(
-                        displayName: "Generate performance test for \(viewName)",
+                        displayName: "Generate localization test for \(viewName)",
                         executable: .init("/bin/echo"),
                         arguments: ["Generated test for \(viewName)"],
                         outputFiles: [testFilePath]
@@ -113,7 +113,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             case .product(let target):
                 // Find the product in the package
                 if let product = package.products.first(where: { $0.name == target.name }),
-                   let target = package.targets.first(where: { $0.name == product.name }) {
+                   let target = package.targets.first(where: { $0.name == product.name })
+                {
                     testedTargets.append(target)
                 }
             @unknown default:
@@ -124,108 +125,49 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         return testedTargets
     }
     
-    func generateTestContent(for viewName: String, target: String) -> String {
+    private func generateLocalizationTestContent(for viewName: String, target: String) -> String {
         """
         import XCTest
         import SwiftUI
+        import ViewInspector
         @testable import \(target)
-        @testable import Quark
-        
+
         @MainActor
-        final class \(viewName)PerformanceTests: XCTestCase, Sendable {
-            typealias ViewType = \(viewName)
-            var view: ViewType!
-            var hostingController: UIHostingController<ViewType>!
-            
-            override func setUp() {
-                super.setUp()
-                // Initialize view without parameters
-                view = ViewType()
-                hostingController = UIHostingController(rootView: view)
-                _ = hostingController.view // Force view load
-            }
-            
-            override func tearDown() {
-                view = nil
-                hostingController = nil
-                super.tearDown()
-            }
-            
-            func testViewInitialization() {
-                XCTAssertNotNil(view, "View should be initialized")
-                XCTAssertNotNil(hostingController, "Hosting controller should be initialized")
-                XCTAssertNotNil(hostingController.view, "View should be loaded")
-            }
-            
-            func testInitialState() {
-                // Test that the switch is initially checked (true)
-                let mirror = Mirror(reflecting: view)
-                if let switchChecked = mirror.children.first(where: { $0.label == "switchChecked" })?.value as? Bool {
-                    XCTAssertTrue(switchChecked, "Switch should be initially checked")
-                } else {
-                    XCTFail("Could not find switchChecked property")
-                }
-            }
-            
-            func testSwitchToggle() {
-                // Reset test context
-                TestContext.shared.reset()
-                
-                // Toggle the switch
-                let mirror = Mirror(reflecting: view)
-                if let child = mirror.children.first(where: { $0.label == "switchChecked" }) {
-                    if var value = child.value as? Bool {
-                        value.toggle()
-                        if let keyPath = try? KeyPath<ViewType, Bool>("switchChecked") {
-                            view[keyPath: keyPath] = value
+        final class Quark\(viewName)L10nTests: XCTestCase {
+                func testTranslations() {
+                    #if SWIFT_PACKAGE
+                        let bundle = Bundle.module
+                    #else
+                        let bundle = Bundle.main
+                    #endif
+                    
+                    let supportedLocales = bundle.localizations
+                    let sut = \(viewName)()
+
+                    do {
+                        let parent = try sut.inspect().implicitAnyView()
+                        let textElements = parent.findAll(ViewType.Text.self)
+                        for locale in supportedLocales {
+                            let stringsPath = bundle.path(forResource: "Localizable",
+                                                          ofType: "strings",
+                                                          inDirectory: nil,
+                                                          forLocalization: locale)
+                            let dictionary = NSDictionary(contentsOfFile: stringsPath ?? "")
+
+                            for textElement in textElements {
+                                let string = try textElement.string(locale: Locale(identifier: locale))
+                                guard let value = dictionary?.first(where: { ($0.value as? String ?? "") == string })?.value as? String else {
+                                    XCTFail("No translation found for \\(locale) - value: \\(string)")
+                                    return
+                                }
+
+                                XCTAssertEqual(string, value)
+                            }
                         }
+                    } catch {
+                        XCTFail("Test failed: \\(String(describing: error))")
                     }
                 }
-                
-                // Wait for UI update
-                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
-                
-                // Verify switch state changed
-                let updatedMirror = Mirror(reflecting: view)
-                if let switchChecked = updatedMirror.children.first(where: { $0.label == "switchChecked" })?.value as? Bool {
-                    XCTAssertFalse(switchChecked, "Switch should be toggled to unchecked")
-                } else {
-                    XCTFail("Could not find switchChecked property after toggle")
-                }
-                
-                // Check which views recomputed
-                let recomputeCounts = TestContext.shared.recomputeCounts
-                XCTAssertFalse(recomputeCounts.isEmpty, "Some views should have recomputed")
-                
-                // Print recomputation details for debugging
-                print("Recomputation Details:")
-                for (viewId, info) in recomputeCounts {
-                    print("- View ID: \\(viewId)")
-                    print("  Count: \\(info.count)")
-                    print("  File: \\(info.file)")
-                    print("  Line: \\(info.line)")
-                }
-            }
-            
-            func testViewDependencies() {
-                // Access tracked dependencies
-                let dependencies = ViewType.trackedDependencies
-                XCTAssertFalse(dependencies.isEmpty, "View should have tracked dependencies")
-                
-                // Verify switchChecked is tracked
-                let hasSwitchChecked = dependencies.contains { dep in
-                    dep.name == "switchChecked" && dep.type == "Bool"
-                }
-                XCTAssertTrue(hasSwitchChecked, "switchChecked should be tracked as a dependency")
-                
-                // Print dependencies for debugging
-                print("Tracked Dependencies:")
-                for dep in dependencies {
-                    print("- Name: \\(dep.name)")
-                    print("  Type: \\(dep.type)")
-                    print("  Wrapper: \\(dep.wrapper)")
-                }
-            }
         }
         """
     }

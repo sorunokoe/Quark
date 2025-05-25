@@ -8,10 +8,5 @@
 import SwiftUI
 
 @attached(member, names: arbitrary)
-public macro TrackPerformance() = #externalMacro(module: "QuarkMacros", type: "TrackPerformanceMacro")
+public macro QuarkLocalize() = #externalMacro(module: "QuarkMacros", type: "QuarkLocalizeMacro")
 
-@freestanding(expression)
-public macro Hello() = #externalMacro(module: "QuarkMacros", type: "HelloMacro")
-
-@attached(member, names: arbitrary)
-public macro AddProperty() = #externalMacro(module: "QuarkMacros", type: "AddPropertyMacro")

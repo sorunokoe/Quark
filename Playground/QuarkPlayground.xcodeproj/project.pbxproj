@@ -1,0 +1,534 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		373826B22F5EA86FB7BA5AFA /* Quark in Frameworks */ = {isa = PBXBuildFile; productRef = D9E7D969FE13C6CD9678DD30 /* Quark */; };
+		7E6893CC107137651C20F73C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AEBB530676561AA12FEB491 /* ContentView.swift */; };
+		92115EB4A2377D8EEA65FEC6 /* QuarkTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 6561CE7750C8EA80341552DE /* QuarkTesting */; };
+		F07B675D21307EE93D9554FC /* QuarkPlaygroundApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195365A4478A09B8384AD974 /* QuarkPlaygroundApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		83BB18B605301427610F8AB4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83D4EA37839A8528845D8142 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CCCB651B33B31A0C85812764;
+			remoteInfo = QuarkPlayground;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		28A2803333BD8180BCD51170 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E338B5D00B3149D55202A38 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		195365A4478A09B8384AD974 /* QuarkPlaygroundApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarkPlaygroundApp.swift; sourceTree = "<group>"; };
+		21187C404547CCB8430DD72E /* QuarkPlaygroundTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuarkPlaygroundTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3AEBB530676561AA12FEB491 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		5FB48FE02FD8A3DEFC0A31ED /* QuarkPlayground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuarkPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		90FE76D87BFD596A56262454 /* QuarkPlaygroundTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "QuarkPlaygroundTests-Info.plist"; sourceTree = "<group>"; };
+		A50EF612012529E52F4923FC /* QuarkPlayground-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "QuarkPlayground-Info.plist"; sourceTree = "<group>"; };
+		B59A152E3604DE89779C7984 /* Quark */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Quark; path = ..; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2BCC021B56913E6BD0457FE5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				373826B22F5EA86FB7BA5AFA /* Quark in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3421290810E6AA5BBFC0F36A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92115EB4A2377D8EEA65FEC6 /* QuarkTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2F177F45FB6038CCF1401D96 /* Project */ = {
+			isa = PBXGroup;
+			children = (
+				FBA30B0954F174333627ED97 /* Derived */,
+				43B3C3C0907025EE8F04B7B1 /* Sources */,
+				31DE7643A3073879269376CA /* Tests */,
+			);
+			name = Project;
+			sourceTree = "<group>";
+		};
+		31DE7643A3073879269376CA /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		43B3C3C0907025EE8F04B7B1 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				3AEBB530676561AA12FEB491 /* ContentView.swift */,
+				195365A4478A09B8384AD974 /* QuarkPlaygroundApp.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		575EF14471F467F44B122EBB /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				B59A152E3604DE89779C7984 /* Quark */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5B1745E51FC8233A03D44560 /* InfoPlists */ = {
+			isa = PBXGroup;
+			children = (
+				A50EF612012529E52F4923FC /* QuarkPlayground-Info.plist */,
+				90FE76D87BFD596A56262454 /* QuarkPlaygroundTests-Info.plist */,
+			);
+			path = InfoPlists;
+			sourceTree = "<group>";
+		};
+		72884801628BE50502964EBB = {
+			isa = PBXGroup;
+			children = (
+				2F177F45FB6038CCF1401D96 /* Project */,
+				AA06C3A027359A03E10CE03C /* Products */,
+				575EF14471F467F44B122EBB /* Packages */,
+			);
+			sourceTree = "<group>";
+		};
+		AA06C3A027359A03E10CE03C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5FB48FE02FD8A3DEFC0A31ED /* QuarkPlayground.app */,
+				21187C404547CCB8430DD72E /* QuarkPlaygroundTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FBA30B0954F174333627ED97 /* Derived */ = {
+			isa = PBXGroup;
+			children = (
+				5B1745E51FC8233A03D44560 /* InfoPlists */,
+			);
+			path = Derived;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0923C80511D3B4E699E44193 /* QuarkPlaygroundTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3DD085B6C0DE5812D658287F /* Build configuration list for PBXNativeTarget "QuarkPlaygroundTests" */;
+			buildPhases = (
+				E18DD619F8B16B7BD1271454 /* Sources */,
+				516F85F22A596B06DC7678D2 /* Resources */,
+				3421290810E6AA5BBFC0F36A /* Frameworks */,
+				28A2803333BD8180BCD51170 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7C7AED2F755D441B8E790470 /* PBXTargetDependency */,
+			);
+			name = QuarkPlaygroundTests;
+			packageProductDependencies = (
+				6561CE7750C8EA80341552DE /* QuarkTesting */,
+			);
+			productName = QuarkPlaygroundTests;
+			productReference = 21187C404547CCB8430DD72E /* QuarkPlaygroundTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		CCCB651B33B31A0C85812764 /* QuarkPlayground */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1D4336A3573C3C3EFF56EEEB /* Build configuration list for PBXNativeTarget "QuarkPlayground" */;
+			buildPhases = (
+				56FD82FCAB5A9C9C8D6EBEE2 /* Sources */,
+				0F004552E710265B07D89A46 /* Resources */,
+				2BCC021B56913E6BD0457FE5 /* Frameworks */,
+				9E338B5D00B3149D55202A38 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = QuarkPlayground;
+			packageProductDependencies = (
+				D9E7D969FE13C6CD9678DD30 /* Quark */,
+			);
+			productName = QuarkPlayground;
+			productReference = 5FB48FE02FD8A3DEFC0A31ED /* QuarkPlayground.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83D4EA37839A8528845D8142 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				TargetAttributes = {
+					0923C80511D3B4E699E44193 = {
+						TestTargetID = CCCB651B33B31A0C85812764;
+					};
+				};
+			};
+			buildConfigurationList = 3E88593D4173666817CA998F /* Build configuration list for PBXProject "QuarkPlayground" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 72884801628BE50502964EBB;
+			productRefGroup = AA06C3A027359A03E10CE03C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CCCB651B33B31A0C85812764 /* QuarkPlayground */,
+				0923C80511D3B4E699E44193 /* QuarkPlaygroundTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0F004552E710265B07D89A46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		516F85F22A596B06DC7678D2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		56FD82FCAB5A9C9C8D6EBEE2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E6893CC107137651C20F73C /* ContentView.swift in Sources */,
+				F07B675D21307EE93D9554FC /* QuarkPlaygroundApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E18DD619F8B16B7BD1271454 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7C7AED2F755D441B8E790470 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = QuarkPlayground;
+			target = CCCB651B33B31A0C85812764 /* QuarkPlayground */;
+			targetProxy = 83BB18B605301427610F8AB4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		707375C8F8FF6DD3110B4B5A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8694810A22EE511CAB03D9C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Derived/InfoPlists/QuarkPlaygroundTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.salgara.QuarkPlaygroundTests;
+				PRODUCT_NAME = QuarkPlaygroundTests;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/QuarkPlayground.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/QuarkPlayground";
+				TEST_TARGET_NAME = QuarkPlayground;
+			};
+			name = Release;
+		};
+		8DC1D17DAF67DE9B8A3DEFFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B3A9E10DA45F3CC300B10093 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Derived/InfoPlists/QuarkPlayground-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.salgara.QuarkPlayground;
+				PRODUCT_NAME = QuarkPlayground;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C095F5B68743419E20040C5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Derived/InfoPlists/QuarkPlayground-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.salgara.QuarkPlayground;
+				PRODUCT_NAME = QuarkPlayground;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CA372AE1C674E35FAE233D81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Derived/InfoPlists/QuarkPlaygroundTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.salgara.QuarkPlaygroundTests;
+				PRODUCT_NAME = QuarkPlaygroundTests;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/QuarkPlayground.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/QuarkPlayground";
+				TEST_TARGET_NAME = QuarkPlayground;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1D4336A3573C3C3EFF56EEEB /* Build configuration list for PBXNativeTarget "QuarkPlayground" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C095F5B68743419E20040C5C /* Debug */,
+				B3A9E10DA45F3CC300B10093 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3DD085B6C0DE5812D658287F /* Build configuration list for PBXNativeTarget "QuarkPlaygroundTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA372AE1C674E35FAE233D81 /* Debug */,
+				8694810A22EE511CAB03D9C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E88593D4173666817CA998F /* Build configuration list for PBXProject "QuarkPlayground" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				707375C8F8FF6DD3110B4B5A /* Debug */,
+				8DC1D17DAF67DE9B8A3DEFFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6561CE7750C8EA80341552DE /* QuarkTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = QuarkTesting;
+		};
+		D9E7D969FE13C6CD9678DD30 /* Quark */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Quark;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 83D4EA37839A8528845D8142 /* Project object */;
+}

@@ -15,10 +15,14 @@ let package = Package(
             name: "Quark",
             targets: ["Quark"]
         ),
+        .library(
+            name: "QuarkTesting",
+            targets: ["QuarkTesting"]
+        ),
         .plugin(
             name: "QuarkTestsPlugin",
             targets: ["QuarkTestsPlugin"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
@@ -28,13 +32,12 @@ let package = Package(
             name: "Quark",
             dependencies: [
                 .target(name: "QuarkMacros"),
-            ],
-            swiftSettings: [
-                .enableUpcomingFeature("Macros"),
-                .enableExperimentalFeature("Macros"),
-            ],
+            ]
+        ),
+        .target(
+            name: "QuarkTesting",
             plugins: [
-                .plugin(name: "QuarkTestsPlugin"),
+                .plugin(name: "QuarkTestsPlugin")
             ]
         ),
         .macro(
