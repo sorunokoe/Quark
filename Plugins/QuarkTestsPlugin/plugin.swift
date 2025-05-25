@@ -59,44 +59,53 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
                 let content = try String(contentsOfFile: file.url.path)
                 
-                // Look for both the macro and its expanded form
-                guard content.contains("#QuarkLocalize") else { continue }
+                // Look for Quark macro usage
+                guard content.contains("#Quark") else { continue }
                 
-                print("[QuarkTestsPlugin] Found localization tracking in: \(file.url.lastPathComponent)")
+                print("[QuarkTestsPlugin] Found Quark macro in: \(file.url.lastPathComponent)")
                 
-                // Extract all view names from the file content
-                let viewInfo = extractViewNames(from: content)
+                // Extract view information and parameters
+                let viewInfos = extractViewInfo(from: content)
                 
-                for (viewName, initialization) in viewInfo {
-                    let testFilePath = outputDir.appending("\(viewName)Tests.swift")
-                    let testContent = generateLocalizationTestContent(for: viewName, initialization: initialization, target: sourceTarget.name)
-                    
-                    try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
-                    print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
-                    
-                    generatedTestFiles.insert(testFilePath.string)
-                    
-                    // Add the generated test file to the output files
-                    commands.append(
-                        .buildCommand(
-                            displayName: "Generate localization test for \(viewName)",
-                            executable: .init("/bin/echo"),
-                            arguments: ["Generated test for \(viewName)"],
-                            outputFiles: [testFilePath]
+                for viewInfo in viewInfos {
+                    // Generate tests based on parameters
+                    if viewInfo.parameters.contains(.localize) {
+                        let generator = LocalizationTestGenerator()
+                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
+                        let testFileName = "\(viewInfo.name)L10nTests.swift"
+                        let testFilePath = outputDir.appending(testFileName)
+                        
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                        generatedTestFiles.insert(testFileName)
+                        
+                        commands.append(
+                            .buildCommand(
+                                displayName: "Generate localization tests for \(viewInfo.name)",
+                                executable: .init("/bin/echo"),
+                                arguments: ["Generated localization tests for \(viewInfo.name)"],
+                                outputFiles: [testFilePath]
+                            )
                         )
-                    )
-                }
-            }
-        }
-        
-        // Clean up old test files that are no longer needed
-        let fileManager = FileManager.default
-        if let existingFiles = try? fileManager.contentsOfDirectory(atPath: outputDir.string) {
-            for file in existingFiles {
-                let filePath = outputDir.appending(file).string
-                if file.hasSuffix("Tests.swift") && !generatedTestFiles.contains(filePath) {
-                    try? fileManager.removeItem(atPath: filePath)
-                    print("[QuarkTestsPlugin] Removed old test file: \(file)")
+                    }
+                    
+                    if viewInfo.parameters.contains(.snapshot) {
+                        let generator = SnapshotTestGenerator()
+                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
+                        let testFileName = "\(viewInfo.name)SnapshotTests.swift"
+                        let testFilePath = outputDir.appending(testFileName)
+                        
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                        generatedTestFiles.insert(testFileName)
+                        
+                        commands.append(
+                            .buildCommand(
+                                displayName: "Generate snapshot tests for \(viewInfo.name)",
+                                executable: .init("/bin/echo"),
+                                arguments: ["Generated snapshot tests for \(viewInfo.name)"],
+                                outputFiles: [testFilePath]
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -146,16 +155,11 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         return testedTargets
     }
     
-    private func extractViewNames(from content: String) -> [(name: String, initialization: String)] {
-        var viewInfo: [(name: String, initialization: String)] = []
+    private func extractViewInfo(from content: String) -> [ViewInfo] {
+        var viewInfos: [ViewInfo] = []
         let lines = content.components(separatedBy: .newlines)
         
-        print("[QuarkTestsPlugin] Extracting view names from content with \(lines.count) lines")
-        
-        var currentMacroContent: String = ""
-        var isCollectingMacroContent = false
-        var parenthesesCount = 0
-        var macroStartIndex = 0
+        print("[QuarkTestsPlugin] Extracting view info from content with \(lines.count) lines")
         
         // First, find all struct definitions
         var structDefinitions: [(name: String, lineIndex: Int)] = []
@@ -171,40 +175,44 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         }
         
         // Then process macro usages
+        var currentMacroContent: String = ""
+        var isCollectingMacroContent = false
+        var parenthesesCount = 0
+        var currentParameters: [QuarkParameters] = []
+        
         for (index, line) in lines.enumerated() {
-            if line.contains("#QuarkLocalize") {
-                print("[QuarkTestsPlugin] Found QuarkLocalize macro in line: \(line)")
+            if line.contains("#Quark") {
+                print("[QuarkTestsPlugin] Found Quark macro in line: \(line)")
                 isCollectingMacroContent = true
                 currentMacroContent = ""
-                macroStartIndex = index
+                parenthesesCount = 0
                 
-                // Extract the view initialization code
-                let startIndex = line.range(of: "#QuarkLocalize")?.upperBound ?? line.startIndex
-                let remainingText = String(line[startIndex...]).trimmingCharacters(in: .whitespaces)
-                print("[QuarkTestsPlugin] Remaining text after macro: \(remainingText)")
+                // Extract parameters from the first line
+                if let paramsRange = line.range(of: "\\[.*?\\]", options: .regularExpression) {
+                    let paramsText = String(line[paramsRange])
+                    print("[QuarkTestsPlugin] Found parameters text: \(paramsText)")
+                    currentParameters = extractParameters(from: paramsText)
+                }
                 
-                // Count parentheses in the first line
-                parenthesesCount = remainingText.filter { $0 == "(" }.count - remainingText.filter { $0 == ")" }.count
-                currentMacroContent = remainingText
-                
-                // If no parentheses in first line, continue to next line
-                if !remainingText.contains("(") {
-                    continue
+                // Start collecting content after the opening brace
+                if let braceIndex = line.range(of: "{")?.upperBound {
+                    currentMacroContent = String(line[braceIndex...]).trimmingCharacters(in: .whitespaces)
+                    parenthesesCount = 1
                 }
             } else if isCollectingMacroContent {
-                // Count parentheses in subsequent lines
-                parenthesesCount += line.filter { $0 == "(" }.count - line.filter { $0 == ")" }.count
+                // Count braces
+                parenthesesCount += line.filter { $0 == "{" }.count - line.filter { $0 == "}" }.count
                 currentMacroContent += "\n" + line
                 
-                // If we've closed all parentheses, process the content
+                // If we've closed all braces, process the content
                 if parenthesesCount == 0 {
                     print("[QuarkTestsPlugin] Completed macro content: \(currentMacroContent)")
                     
-                    // Extract the initialization code
+                    // Extract the view initialization
                     let initialization = currentMacroContent
                         .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "^\\(|\\)$", with: "", options: .regularExpression)
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .replacingOccurrences(of: "^\\s*|\\s*$", with: "", options: .regularExpression)
+                        .replacingOccurrences(of: "\\}\\s*$", with: "", options: .regularExpression) // Remove trailing closing brace
                     
                     print("[QuarkTestsPlugin] Extracted initialization: \(initialization)")
                     
@@ -215,76 +223,56 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                         // Find the matching struct definition
                         if let structDef = structDefinitions.first(where: { $0.name == viewName }) {
                             print("[QuarkTestsPlugin] Found matching struct: \(structDef.name)")
-                            viewInfo.append((name: structDef.name, initialization: initialization))
+                            viewInfos.append(ViewInfo(
+                                name: structDef.name,
+                                initialization: initialization,
+                                parameters: currentParameters
+                            ))
                         } else {
                             print("[QuarkTestsPlugin] No matching struct found for view: \(viewName)")
                         }
                     }
                     
                     isCollectingMacroContent = false
+                    currentParameters = []
                 }
             }
         }
         
-        print("[QuarkTestsPlugin] Extracted view info: \(viewInfo)")
-        return viewInfo
+        print("[QuarkTestsPlugin] Extracted view info: \(viewInfos)")
+        return viewInfos
     }
     
-    private func generateLocalizationTestContent(for viewName: String, initialization: String, target: String) -> String {
-        """
-        //
-        //  \(viewName)Tests.swift
-        //  \(target)
-        //
-        //  Created by Yeskendir Salgara on 25/05/2025.
-        //
-
-        import Foundation
-        @testable import \(target)
-        import SwiftUI
-        import ViewInspector
-        import XCTest
-        import Quark
-
-        @MainActor
-        final class Quark\(viewName)L10nTests: XCTestCase {
-            func testTranslations() {
-                #if SWIFT_PACKAGE
-                    let bundle = Bundle.module
-                #else
-                    let bundle = Bundle.main
-                #endif
+    private func extractParameters(from text: String) -> [QuarkParameters] {
+        var parameters: [QuarkParameters] = []
+        
+        // Extract parameters from array syntax
+        if let range = text.range(of: "\\[.*?\\]", options: .regularExpression) {
+            let paramsText = String(text[range])
+                .replacingOccurrences(of: "[", with: "")
+                .replacingOccurrences(of: "]", with: "")
+                .trimmingCharacters(in: .whitespaces)
+            
+            print("[QuarkTestsPlugin] Extracting parameters from: \(paramsText)")
+            
+            let paramStrings = paramsText.components(separatedBy: ",")
+            
+            for param in paramStrings {
+                let trimmedParam = param.trimmingCharacters(in: .whitespaces)
+                print("[QuarkTestsPlugin] Processing parameter: \(trimmedParam)")
                 
-                let supportedLocales = bundle.localizations
-                let sut = \(initialization)
-
-                do {
-                    let parent = try sut.inspect().implicitAnyView()
-                    let textElements = parent.findAll(ViewType.Text.self) { view in
-                        (try? view.modifier(NoLocalizationNeeded.self)) == nil
-                    }
-                    for locale in supportedLocales {
-                        let stringsPath = bundle.path(forResource: "Localizable",
-                                                      ofType: "strings",
-                                                      inDirectory: nil,
-                                                      forLocalization: locale)
-                        let dictionary = NSDictionary(contentsOfFile: stringsPath ?? "")
-
-                        for textElement in textElements {
-                            let string = try textElement.string(locale: Locale(identifier: locale))
-                            guard let value = dictionary?.first(where: { ($0.value as? String ?? "") == string })?.value as? String else {
-                                XCTFail("No translation found for \\(locale) - value: \\(string)")
-                                return
-                            }
-
-                            XCTAssertEqual(string, value)
-                        }
-                    }
-                } catch {
-                    XCTFail("Test failed: \\(String(describing: error))")
+                if trimmedParam.contains(".localize") {
+                    parameters.append(.localize)
+                    print("[QuarkTestsPlugin] Added .localize parameter")
+                }
+                if trimmedParam.contains(".snapshot") {
+                    parameters.append(.snapshot)
+                    print("[QuarkTestsPlugin] Added .snapshot parameter")
                 }
             }
         }
-        """
+        
+        print("[QuarkTestsPlugin] Extracted parameters: \(parameters)")
+        return parameters
     }
 }

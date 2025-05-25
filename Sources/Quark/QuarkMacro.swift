@@ -8,5 +8,10 @@
 import SwiftUI
 
 @freestanding(expression)
-public macro QuarkLocalize<T: View>(_ view: T) -> T = #externalMacro(module: "QuarkMacros", type: "QuarkLocalizeMacro")
+public macro Quark<T: View>(_ parameters: [QuarkParameters], @ViewBuilder _ view: () -> T) -> T = #externalMacro(module: "QuarkMacros", type: "QuarkMacro")
+
+public enum QuarkParameters {
+    case localize
+    case snapshot
+}
 
