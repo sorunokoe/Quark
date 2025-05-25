@@ -26,6 +26,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
+        .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.10.1")
     ],
     targets: [
         .target(
@@ -36,8 +37,8 @@ let package = Package(
         ),
         .target(
             name: "QuarkTesting",
-            plugins: [
-                .plugin(name: "QuarkTestsPlugin")
+            dependencies: [
+                .product(name: "ViewInspector", package: "ViewInspector")
             ]
         ),
         .macro(
@@ -51,10 +52,6 @@ let package = Package(
         .plugin(
             name: "QuarkTestsPlugin",
             capability: .buildTool()
-        ),
-        .testTarget(
-            name: "QuarkTests",
-            dependencies: ["Quark"]
-        ),
+        )
     ]
 )

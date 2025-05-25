@@ -64,25 +64,28 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 
                 print("[QuarkTestsPlugin] Found localization tracking in: \(file.url.lastPathComponent)")
                 
-                // Extract the view name from the file content
-                let viewName = extractViewName(from: content) ?? file.url.deletingPathExtension().lastPathComponent
-                let testFilePath = outputDir.appending("\(viewName)Tests.swift")
-                let testContent = generateLocalizationTestContent(for: viewName, target: sourceTarget.name)
+                // Extract all view names from the file content
+                let viewNames = extractViewNames(from: content)
                 
-                try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
-                print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
-                
-                generatedTestFiles.insert(testFilePath.string)
-                
-                // Add the generated test file to the output files
-                commands.append(
-                    .buildCommand(
-                        displayName: "Generate localization test for \(viewName)",
-                        executable: .init("/bin/echo"),
-                        arguments: ["Generated test for \(viewName)"],
-                        outputFiles: [testFilePath]
+                for viewName in viewNames {
+                    let testFilePath = outputDir.appending("\(viewName)Tests.swift")
+                    let testContent = generateLocalizationTestContent(for: viewName, target: sourceTarget.name)
+                    
+                    try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                    print("[QuarkTestsPlugin] Generated test: \(testFilePath.string)")
+                    
+                    generatedTestFiles.insert(testFilePath.string)
+                    
+                    // Add the generated test file to the output files
+                    commands.append(
+                        .buildCommand(
+                            displayName: "Generate localization test for \(viewName)",
+                            executable: .init("/bin/echo"),
+                            arguments: ["Generated test for \(viewName)"],
+                            outputFiles: [testFilePath]
+                        )
                     )
-                )
+                }
             }
         }
         
@@ -198,21 +201,25 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         """
     }
     
-    private func extractViewName(from content: String) -> String? {
-        // Look for struct definitions that are marked with @QuarkLocalize
+    private func extractViewNames(from content: String) -> [String] {
+        var viewNames: [String] = []
         let lines = content.components(separatedBy: .newlines)
-        for line in lines {
+        
+        for (index, line) in lines.enumerated() {
             if line.contains("@QuarkLocalize") {
-                // Find the next line that contains "struct" and extract the name
-                if let structLine = lines.first(where: { $0.contains("struct") && $0.contains(": View") }) {
-                    let components = structLine.components(separatedBy: "struct")
-                    if components.count > 1 {
-                        let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
-                        return nameComponent
+                // Look for the next struct definition that conforms to View
+                for nextLine in lines[index...] {
+                    if nextLine.contains("struct") && nextLine.contains(": View") {
+                        let components = nextLine.components(separatedBy: "struct")
+                        if components.count > 1 {
+                            let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
+                            viewNames.append(nameComponent)
+                            break
+                        }
                     }
                 }
             }
         }
-        return nil
+        return viewNames
     }
 }
