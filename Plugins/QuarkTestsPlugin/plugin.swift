@@ -61,8 +61,9 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                 
                 print("[QuarkTestsPlugin] Found localization tracking in: \(file.url.lastPathComponent)")
                 
-                let viewName = file.url.deletingPathExtension().lastPathComponent
-                let testFilePath = outputDir.appending("\(viewName)LocalizationTests.swift")
+                // Extract the view name from the file content
+                let viewName = extractViewName(from: content) ?? file.url.deletingPathExtension().lastPathComponent
+                let testFilePath = outputDir.appending("\(viewName)Tests.swift")
                 let testContent = generateLocalizationTestContent(for: viewName, target: sourceTarget.name)
                 
                 try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
@@ -127,48 +128,74 @@ struct QuarkTestsPlugin: BuildToolPlugin {
     
     private func generateLocalizationTestContent(for viewName: String, target: String) -> String {
         """
-        import XCTest
+        //
+        //  \(viewName)Tests.swift
+        //  \(target)
+        //
+        //  Created by Yeskendir Salgara on 25/05/2025.
+        //
+
+        import Foundation
+        @testable import \(target)
         import SwiftUI
         import ViewInspector
-        @testable import \(target)
+        import XCTest
 
         @MainActor
         final class Quark\(viewName)L10nTests: XCTestCase {
-                func testTranslations() {
-                    #if SWIFT_PACKAGE
-                        let bundle = Bundle.module
-                    #else
-                        let bundle = Bundle.main
-                    #endif
-                    
-                    let supportedLocales = bundle.localizations
-                    let sut = \(viewName)()
+            func testTranslations() {
+                #if SWIFT_PACKAGE
+                    let bundle = Bundle.module
+                #else
+                    let bundle = Bundle.main
+                #endif
+                
+                let supportedLocales = bundle.localizations
+                let sut = \(viewName)()
 
-                    do {
-                        let parent = try sut.inspect().implicitAnyView()
-                        let textElements = parent.findAll(ViewType.Text.self)
-                        for locale in supportedLocales {
-                            let stringsPath = bundle.path(forResource: "Localizable",
-                                                          ofType: "strings",
-                                                          inDirectory: nil,
-                                                          forLocalization: locale)
-                            let dictionary = NSDictionary(contentsOfFile: stringsPath ?? "")
+                do {
+                    let parent = try sut.inspect().implicitAnyView()
+                    let textElements = parent.findAll(ViewType.Text.self)
+                    for locale in supportedLocales {
+                        let stringsPath = bundle.path(forResource: "Localizable",
+                                                      ofType: "strings",
+                                                      inDirectory: nil,
+                                                      forLocalization: locale)
+                        let dictionary = NSDictionary(contentsOfFile: stringsPath ?? "")
 
-                            for textElement in textElements {
-                                let string = try textElement.string(locale: Locale(identifier: locale))
-                                guard let value = dictionary?.first(where: { ($0.value as? String ?? "") == string })?.value as? String else {
-                                    XCTFail("No translation found for \\(locale) - value: \\(string)")
-                                    return
-                                }
-
-                                XCTAssertEqual(string, value)
+                        for textElement in textElements {
+                            let string = try textElement.string(locale: Locale(identifier: locale))
+                            guard let value = dictionary?.first(where: { ($0.value as? String ?? "") == string })?.value as? String else {
+                                XCTFail("No translation found for \\(locale) - value: \\(string)")
+                                return
                             }
+
+                            XCTAssertEqual(string, value)
                         }
-                    } catch {
-                        XCTFail("Test failed: \\(String(describing: error))")
                     }
+                } catch {
+                    XCTFail("Test failed: \\(String(describing: error))")
                 }
+            }
         }
         """
+    }
+    
+    private func extractViewName(from content: String) -> String? {
+        // Look for struct definitions that are marked with @QuarkLocalize
+        let lines = content.components(separatedBy: .newlines)
+        for line in lines {
+            if line.contains("@QuarkLocalize") {
+                // Find the next line that contains "struct" and extract the name
+                if let structLine = lines.first(where: { $0.contains("struct") && $0.contains(": View") }) {
+                    let components = structLine.components(separatedBy: "struct")
+                    if components.count > 1 {
+                        let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
+                        return nameComponent
+                    }
+                }
+            }
+        }
+        return nil
     }
 }
