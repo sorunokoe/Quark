@@ -7,7 +7,8 @@ import PackageDescription
 let package = Package(
     name: "Quark",
     platforms: [
-        .iOS("16.4")
+        .iOS("16.4"),
+        .macOS(.v13)
     ],
     products: [
         .library(
@@ -51,7 +52,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
         .plugin(
