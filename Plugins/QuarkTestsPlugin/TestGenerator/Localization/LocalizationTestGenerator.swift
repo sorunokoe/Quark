@@ -29,7 +29,10 @@ struct LocalizationTestGenerator: TestGenerator {
             func testTranslations() {
                 #if SWIFT_PACKAGE
                     let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
-                    guard let bundle = Bundle(path: path.relativePath) else { return }
+                    guard let bundle = Bundle(path: path.relativePath) else {
+                        XC
+                        return 
+                    }
                 #else
                     let bundle = Bundle.main
                 #endif
