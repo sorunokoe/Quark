@@ -28,7 +28,7 @@ struct LocalizationTestGenerator: TestGenerator {
         final class Quark\(viewInfo.name)L10nTests: XCTestCase {
             func testTranslations() {
                 #if SWIFT_PACKAGE
-                    let bundle = Bundle(for: Quark\(viewInfo.name)L10nTests.self)
+                    guard let bundle = Bundle.allBundles.first else { return }
                 #else
                     let bundle = Bundle.main
                 #endif
@@ -39,9 +39,14 @@ struct LocalizationTestGenerator: TestGenerator {
                 do {
                     let parent = try sut.inspect().implicitAnyView()
                     let textElements = parent.findAll(ViewType.Text.self) { view in
-                        (try? view.modifier(NoLocalizationNeeded.self)) == nil &&
-                        (try? view.parent().modifier(NoLocalizationNeeded.self)) == nil &&
-                        (try? view.parent().parent().modifier(NoLocalizationNeeded.self)) == nil
+                        guard (try? view.modifier(NoLocalizationNeeded.self)) == nil else { return false }
+                        var view = try? view.parent()
+                        var noModifiers = (try? view?.modifier(NoLocalizationNeeded.self)) == nil
+                        while let parentView = try? view?.parent(), noModifiers {
+                            noModifiers = (try? parentView.modifier(NoLocalizationNeeded.self)) == nil
+                            view = parentView
+                        }
+                        return noModifiers
                     }
                     for locale in supportedLocales {
                         let stringsPath = bundle.path(forResource: "Localizable",
