@@ -28,7 +28,7 @@ struct LocalizationTestGenerator: TestGenerator {
         final class Quark\(viewInfo.name)L10nTests: XCTestCase {
             func testTranslations() {
                 #if SWIFT_PACKAGE
-                    let bundle = Bundle.module
+                    let bundle = Bundle(for: Quark\(viewInfo.name)L10nTests.self)
                 #else
                     let bundle = Bundle.main
                 #endif
