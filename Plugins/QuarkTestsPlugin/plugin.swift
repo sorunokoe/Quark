@@ -25,6 +25,11 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         let targetNames = testedTargets.compactMap { $0 as? SourceModuleTarget }.map { $0.name }
         print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
         
+        print("👾" + context.pluginWorkDirectoryURL.absoluteString)
+        for target in context.package.targets {
+            print("👾 Target: " + target.name)
+        }
+        
         // Generate tests in the plugin's work directory
         let outputDir = context.pluginWorkDirectory.appending("GeneratedTests")
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.string), withIntermediateDirectories: true)
