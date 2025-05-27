@@ -57,7 +57,7 @@ struct LocalizationTestGenerator: TestGenerator {
 
                         for textElement in textElements {
                             let string = try textElement.string(locale: Locale(identifier: locale))
-                            guard let value = dictionary?.first(where: { ($0.value as? String ?? "") == string })?.value as? String else {
+                            guard let value = dictionary?.first(where: { ($0.key as? String ?? "") == string })?.value as? String else {
                                 XCTFail("No translation found for \\(locale) - value: \\(string)")
                                 return
                             }
