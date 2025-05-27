@@ -8,7 +8,7 @@
 import Foundation
 
 struct LocalizationTestGenerator: TestGenerator {
-    func generateTests(for viewInfo: ViewInfo, target: String, mainAppTarget: String?) -> String {
+    func generateTests(for viewInfo: ViewInfo, target: String) -> String {
         """
         //
         //  \(viewInfo.name)Tests.swift
@@ -27,17 +27,10 @@ struct LocalizationTestGenerator: TestGenerator {
         @MainActor
         final class Quark\(viewInfo.name)L10nTests: XCTestCase {
             func testTranslations() {
-                var bundle: Bundle = Bundle(for: UIScene.self)
-                let mainBundle = Bundle.main.bundleURL.appendingPathComponent("\(mainAppTarget ?? "").app").path
-                // Try to find the bundle in the main app first
-                if let appBundle = Bundle(path: mainBundle) {
-                    bundle = appBundle
-                } else {
-                    // Fallback to SPM module bundle
-                    let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
-                    if let moduleBundle = Bundle(path: path.relativePath) {
-                        bundle = moduleBundle
-                    }
+                var bundle: Bundle = Bundle.allBundles.first { $0.bundlePath.contains("Build/Products") && $0.bundleURL.lastPathComponent.contains(".app") } ?? Bundle.main
+                let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
+                if let moduleBundle = Bundle(path: path.relativePath) {
+                    bundle = moduleBundle
                 }
 
                 let supportedLocales = bundle.localizations

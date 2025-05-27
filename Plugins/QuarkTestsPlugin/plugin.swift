@@ -56,23 +56,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                     // Generate tests based on parameters
                     if viewInfo.parameters.contains(.localize) {
                         let generator = LocalizationTestGenerator()
-                        
-                        // Find the root app target by traversing up the dependency chain
-                        var rootTarget: Target? = nil
-                        var currentTarget: Target = testTarget
-                        
-                        print("Current target: \(currentTarget.name)")
-                        
-                        while let parentTarget = findParentTarget(for: currentTarget, in: context.package) {
-                            print("Current target: \(parentTarget.name)")
-                            if !parentTarget.name.contains("Tests") {
-                                rootTarget = parentTarget
-                                break
-                            }
-                            currentTarget = parentTarget
-                        }
-                        
-                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name, mainAppTarget: rootTarget?.name)
+                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
                         let testFileName = "\(viewInfo.name)L10nTests.swift"
                         let testFilePath = outputDir.appending(testFileName)
                         
@@ -259,29 +243,5 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         
         print("[QuarkTestsPlugin] Extracted parameters: \(parameters)")
         return parameters
-    }
-    
-    private func findParentTarget(for target: Target, in package: Package) -> Target? {
-        // Look through all targets to find one that depends on our target
-        for potentialParent in package.targets {
-            guard let sourceParent = potentialParent as? SourceModuleTarget else { continue }
-            
-            // Check if this target depends on our target
-            for dependency in sourceParent.dependencies {
-                switch dependency {
-                case .target(let dependentTarget):
-                    if dependentTarget.name == target.name {
-                        return potentialParent
-                    }
-                case .product(let product):
-                    if product.name == target.name {
-                        return potentialParent
-                    }
-                @unknown default:
-                    break
-                }
-            }
-        }
-        return nil
     }
 }
