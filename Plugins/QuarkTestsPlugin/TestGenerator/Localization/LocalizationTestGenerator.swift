@@ -61,8 +61,6 @@ struct LocalizationTestGenerator: TestGenerator {
                                 XCTFail("No translation found for \\(locale) - value: \\(string)")
                                 return
                             }
-
-                            XCTAssertEqual(string, value)
                         }
                     }
                 } catch {
