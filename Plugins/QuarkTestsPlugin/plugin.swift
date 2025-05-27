@@ -56,7 +56,13 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                     // Generate tests based on parameters
                     if viewInfo.parameters.contains(.localize) {
                         let generator = LocalizationTestGenerator()
-                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
+                        // Find the main app target by looking for a target that's not a test target
+                        let mainAppTarget = context.package.targets.first { target in
+                            guard let sourceTarget = target as? SourceModuleTarget else { return false }
+                            return !sourceTarget.name.contains("Tests")
+                        }?.name
+                        
+                        let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name, mainAppTarget: mainAppTarget)
                         let testFileName = "\(viewInfo.name)L10nTests.swift"
                         let testFilePath = outputDir.appending(testFileName)
                         

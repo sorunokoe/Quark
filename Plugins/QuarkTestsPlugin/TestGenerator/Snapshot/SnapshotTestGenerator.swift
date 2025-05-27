@@ -11,7 +11,7 @@ struct SnapshotTestGenerator: TestGenerator {
     
     var directory: String
     
-    func generateTests(for viewInfo: ViewInfo, target: String) -> String {
+    func generateTests(for viewInfo: ViewInfo, target: String, mainAppTarget: String? = nil) -> String {
         """
         //
         //  \(viewInfo.name)SnapshotTests.swift

@@ -1,7 +1,8 @@
 import Foundation
 
 protocol TestGenerator {
-    func generateTests(for viewInfo: ViewInfo, target: String) -> String
+//    func generateTests(for viewInfo: ViewInfo, target: String) -> String
+    func generateTests(for viewInfo: ViewInfo, target: String, mainAppTarget: String?) -> String
 }
 
 struct ViewInfo {
