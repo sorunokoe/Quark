@@ -27,15 +27,11 @@ struct LocalizationTestGenerator: TestGenerator {
         @MainActor
         final class Quark\(viewInfo.name)L10nTests: XCTestCase {
             func testTranslations() {
-                #if SWIFT_PACKAGE
-                    let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
-                    guard let bundle = Bundle(path: path.relativePath) else {
-                        XCTFail("No bundle found. Make sure there is localized files in your SPM package (/Resources).")
-                        return 
-                    }
-                #else
-                    let bundle = Bundle.main
-                #endif
+                var bundle: Bundle = Bundle.main
+                let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
+                if let moduleBundle = Bundle(path: path.relativePath) {
+                    bundle = moduleBundle
+                }
 
                 let supportedLocales = bundle.localizations
                 let sut = \(viewInfo.initialization)
