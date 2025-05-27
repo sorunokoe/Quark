@@ -27,7 +27,7 @@ struct LocalizationTestGenerator: TestGenerator {
         @MainActor
         final class Quark\(viewInfo.name)L10nTests: XCTestCase {
             func testTranslations() {
-                var bundle: Bundle = Bundle(for: UIScene.self)
+                var bundle: Bundle = Bundle.allBundles.first { $0.bundlePath.contains(".app") } ?? Bundle.main
                 let path = Bundle(for: Quark\(viewInfo.name)L10nTests.self).bundleURL.appending(path: "\(target)_\(target).bundle")
                 if let moduleBundle = Bundle(path: path.relativePath) {
                     bundle = moduleBundle
