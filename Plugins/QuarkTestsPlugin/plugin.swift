@@ -31,8 +31,9 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         }
         
         // Generate tests in the plugin's work directory
-        let outputDir = context.pluginWorkDirectory.appending("GeneratedTests")
-        try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.string), withIntermediateDirectories: true)
+        let outputDir = context.pluginWorkDirectoryURL.appending(path: "GeneratedTests")
+        
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.path()), withIntermediateDirectories: true)
         
         var commands: [Command] = []
         
@@ -47,7 +48,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
             
             for file in sourceTarget.sourceFiles(withSuffix: ".swift") {
                 print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
-                let content = try String(contentsOfFile: file.url.path)
+                let content = try String(contentsOfFile: file.url.path, encoding: .utf8)
                 
                 // Look for Quark macro usage
                 guard content.contains("#Quark") else { continue }
@@ -63,38 +64,41 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                         let generator = LocalizationTestGenerator()
                         let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
                         let testFileName = "\(viewInfo.name)L10nTests.swift"
-                        let testFilePath = outputDir.appending(testFileName)
+                        let testFilePath = outputDir.appending(path: testFileName)
                         
-                        try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
                         generatedTestFiles.insert(testFileName)
                         
-                        commands.append(
-                            .buildCommand(
-                                displayName: "Generate localization tests for \(viewInfo.name)",
-                                executable: .init("/bin/echo"),
-                                arguments: ["Generated localization tests for \(viewInfo.name)"],
-                                outputFiles: [testFilePath]
+                        if let url = URL(string: "/bin/echo") {
+                            commands.append(
+                                .buildCommand(
+                                    displayName: "Generate localization tests for \(viewInfo.name)",
+                                    executable: url,
+                                    arguments: ["Generated localization tests for \(viewInfo.name)"],
+                                    outputFiles: [testFilePath]
+                                )
                             )
-                        )
+                        }
                     }
                     
                     if viewInfo.parameters.contains(.snapshot) {
                         let generator = SnapshotTestGenerator(directory: String(describing: testTarget.directory))
                         let testContent = generator.generateTests(for: viewInfo, target: sourceTarget.name)
                         let testFileName = "\(viewInfo.name)SnapshotTests.swift"
-                        let testFilePath = outputDir.appending(testFileName)
+                        let testFilePath = outputDir.appending(path: testFileName)
                         
-                        try testContent.write(to: URL(fileURLWithPath: testFilePath.string), atomically: true, encoding: .utf8)
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
                         generatedTestFiles.insert(testFileName)
-                        
-                        commands.append(
-                            .buildCommand(
-                                displayName: "Generate snapshot tests for \(viewInfo.name)",
-                                executable: .init("/bin/echo"),
-                                arguments: ["Generated snapshot tests for \(viewInfo.name)"],
-                                outputFiles: [testFilePath]
+                        if let url =  URL(string: "/bin/echo") {
+                            commands.append(
+                                .buildCommand(
+                                    displayName: "Generate snapshot tests for \(viewInfo.name)",
+                                    executable: url,
+                                    arguments: ["Generated snapshot tests for \(viewInfo.name)"],
+                                    outputFiles: [testFilePath]
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -154,7 +158,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         var parenthesesCount = 0
         var currentParameters: [QuarkParameters] = []
         
-        for (index, line) in lines.enumerated() {
+        for (_, line) in lines.enumerated() {
             if line.contains("#Quark") {
                 print("[QuarkTestsPlugin] Found Quark macro in line: \(line)")
                 isCollectingMacroContent = true
