@@ -29,7 +29,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.18.4"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "601.0.1"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "601.0.1"),
         .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.10.1")
     ],
     targets: [
