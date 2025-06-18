@@ -39,6 +39,9 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.path()), withIntermediateDirectories: true)
         
+        // Clean up all existing generated test files first
+        cleanupExistingTestFiles(in: URL(fileURLWithPath: outputDir.path()))
+        
         // Keep track of which test files we generate
         var generatedTestFiles: Set<String> = []
         
@@ -245,6 +248,31 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         print("[QuarkTestsPlugin] Extracted parameters: \(parameters)")
         return parameters
     }
+    
+    private func cleanupExistingTestFiles(in outputURL: URL) {
+        let fileManager = FileManager.default
+        
+        print("[QuarkTestsPlugin] Starting cleanup in directory: \(outputURL.path)")
+        
+        do {
+            let existingFiles = try fileManager.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
+            print("[QuarkTestsPlugin] Found \(existingFiles.count) files in directory")
+            
+            for fileURL in existingFiles {
+                let fileName = fileURL.lastPathComponent
+                print("[QuarkTestsPlugin] Checking file: \(fileName)")
+                // Only remove files that match our generated test file patterns
+                if fileName.hasSuffix("L10nTests.swift") || fileName.hasSuffix("SnapshotTests.swift") {
+                    try fileManager.removeItem(at: fileURL)
+                    print("[QuarkTestsPlugin] Removed existing test file: \(fileName)")
+                } else {
+                    print("[QuarkTestsPlugin] Skipping file (doesn't match pattern): \(fileName)")
+                }
+            }
+        } catch {
+            print("[QuarkTestsPlugin] Error cleaning up existing test files: \(error)")
+        }
+    }
 }
 
 #if canImport(XcodeProjectPlugin)
@@ -262,6 +290,9 @@ extension QuarkTestsPlugin: XcodeBuildToolPlugin {
         let outputDir = context.pluginWorkDirectoryURL.appending(path: "GeneratedTests")
         
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.path()), withIntermediateDirectories: true)
+        
+        // Clean up all existing generated test files first
+        cleanupExistingTestFilesForXcode(in: URL(fileURLWithPath: outputDir.path()))
         
         // Keep track of which test files we generate
         var generatedTestFiles: Set<String> = []
@@ -319,6 +350,31 @@ extension QuarkTestsPlugin: XcodeBuildToolPlugin {
                 outputFilesDirectory: outputDir
             )
         ]
+    }
+    
+    private func cleanupExistingTestFilesForXcode(in outputURL: URL) {
+        let fileManager = FileManager.default
+        
+        print("[QuarkTestsPlugin] Starting Xcode cleanup in directory: \(outputURL.path)")
+        
+        do {
+            let existingFiles = try fileManager.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
+            print("[QuarkTestsPlugin] Found \(existingFiles.count) files in directory")
+            
+            for fileURL in existingFiles {
+                let fileName = fileURL.lastPathComponent
+                print("[QuarkTestsPlugin] Checking file: \(fileName)")
+                // Only remove files that match our generated test file patterns
+                if fileName.hasSuffix("L10nTests.swift") || fileName.hasSuffix("SnapshotTests.swift") {
+                    try fileManager.removeItem(at: fileURL)
+                    print("[QuarkTestsPlugin] Removed existing test file: \(fileName)")
+                } else {
+                    print("[QuarkTestsPlugin] Skipping file (doesn't match pattern): \(fileName)")
+                }
+            }
+        } catch {
+            print("[QuarkTestsPlugin] Error cleaning up existing test files: \(error)")
+        }
     }
     
     private func findTestedTargetsForXcode(in project: XcodeProjectPlugin.XcodeProject, for testTarget: XcodeProjectPlugin.XcodeTarget) -> [XcodeProjectPlugin.XcodeTarget] {
