@@ -35,11 +35,11 @@ struct SnapshotTestGenerator: TestGenerator {
             }
         
             func test\(viewInfo.name)Snapshot() {
-                let sut = \(viewInfo.initialization)
+                let lightSut = NavigationView { \(viewInfo.initialization) }.environment(\\.colorScheme, .light)
                 
                 // Test in light mode
                 var failure = verifySnapshot(
-                    of: sut,
+                    of: lightSut,
                     as: .image(layout: .device(config: .iPhone13)),
                     named: "light",
                     snapshotDirectory: filePath,
@@ -50,7 +50,7 @@ struct SnapshotTestGenerator: TestGenerator {
 
                 // Test in dark mode
                 
-                let darkSut = NavigationView { sut }.environment(\\.colorScheme, .dark)
+                let darkSut = NavigationView { \(viewInfo.initialization) }.environment(\\.colorScheme, .dark)
         
                 failure = verifySnapshot(
                     of: darkSut,

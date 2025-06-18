@@ -8,6 +8,10 @@
 import Foundation
 import PackagePlugin
 
+#if canImport(XcodeProjectPlugin)
+import XcodeProjectPlugin
+#endif
+
 @main
 struct QuarkTestsPlugin: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
@@ -35,7 +39,8 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.path()), withIntermediateDirectories: true)
         
-        var commands: [Command] = []
+        // Clean up all existing generated test files first
+        cleanupExistingTestFiles(in: URL(fileURLWithPath: outputDir.path()))
         
         // Keep track of which test files we generate
         var generatedTestFiles: Set<String> = []
@@ -69,16 +74,7 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                         try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
                         generatedTestFiles.insert(testFileName)
                         
-                        if let url = URL(string: "/bin/echo") {
-                            commands.append(
-                                .buildCommand(
-                                    displayName: "Generate localization tests for \(viewInfo.name)",
-                                    executable: url,
-                                    arguments: ["Generated localization tests for \(viewInfo.name)"],
-                                    outputFiles: [testFilePath]
-                                )
-                            )
-                        }
+                        print("[QuarkTestsPlugin] Generate localization tests for \(viewInfo.name)")
                     }
                     
                     if viewInfo.parameters.contains(.snapshot) {
@@ -89,22 +85,21 @@ struct QuarkTestsPlugin: BuildToolPlugin {
                         
                         try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
                         generatedTestFiles.insert(testFileName)
-                        if let url =  URL(string: "/bin/echo") {
-                            commands.append(
-                                .buildCommand(
-                                    displayName: "Generate snapshot tests for \(viewInfo.name)",
-                                    executable: url,
-                                    arguments: ["Generated snapshot tests for \(viewInfo.name)"],
-                                    outputFiles: [testFilePath]
-                                )
-                            )
-                        }
+                        print("[QuarkTestsPlugin] Generate snapshot tests for \(viewInfo.name)")
                     }
                 }
             }
         }
         
-        return commands
+        // Return a single prebuild command that generates all test files
+        return [
+            .prebuildCommand(
+                displayName: "Generating Quark Tests",
+                executable: URL(fileURLWithPath: "/bin/echo"),
+                arguments: ["Quark tests generated successfully"],
+                outputFilesDirectory: outputDir
+            )
+        ]
     }
     
     private func findTestedTargets(in package: Package, for testTarget: SourceModuleTarget) -> [Target] {
@@ -253,4 +248,155 @@ struct QuarkTestsPlugin: BuildToolPlugin {
         print("[QuarkTestsPlugin] Extracted parameters: \(parameters)")
         return parameters
     }
+    
+    private func cleanupExistingTestFiles(in outputURL: URL) {
+        let fileManager = FileManager.default
+        
+        print("[QuarkTestsPlugin] Starting cleanup in directory: \(outputURL.path)")
+        
+        do {
+            let existingFiles = try fileManager.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
+            print("[QuarkTestsPlugin] Found \(existingFiles.count) files in directory")
+            
+            for fileURL in existingFiles {
+                let fileName = fileURL.lastPathComponent
+                print("[QuarkTestsPlugin] Checking file: \(fileName)")
+                // Only remove files that match our generated test file patterns
+                if fileName.hasSuffix("L10nTests.swift") || fileName.hasSuffix("SnapshotTests.swift") {
+                    try fileManager.removeItem(at: fileURL)
+                    print("[QuarkTestsPlugin] Removed existing test file: \(fileName)")
+                } else {
+                    print("[QuarkTestsPlugin] Skipping file (doesn't match pattern): \(fileName)")
+                }
+            }
+        } catch {
+            print("[QuarkTestsPlugin] Error cleaning up existing test files: \(error)")
+        }
+    }
 }
+
+#if canImport(XcodeProjectPlugin)
+extension QuarkTestsPlugin: XcodeBuildToolPlugin {
+    func createBuildCommands(context: XcodeProjectPlugin.XcodePluginContext, target: XcodeProjectPlugin.XcodeTarget) throws -> [PackagePlugin.Command] {
+        print("[QuarkTestsPlugin] Plugin started for Xcode target: \(target.displayName)")
+        
+        // Find all targets that this test target depends on
+        let testedTargets = findTestedTargetsForXcode(in: context.xcodeProject, for: target)
+        
+        let targetNames = testedTargets.map { $0.displayName }
+        print("[QuarkTestsPlugin] Found tested targets: \(targetNames.joined(separator: ", "))")
+        
+        // Generate tests in the plugin's work directory
+        let outputDir = context.pluginWorkDirectoryURL.appending(path: "GeneratedTests")
+        
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: outputDir.path()), withIntermediateDirectories: true)
+        
+        // Clean up all existing generated test files first
+        cleanupExistingTestFilesForXcode(in: URL(fileURLWithPath: outputDir.path()))
+        
+        // Keep track of which test files we generate
+        var generatedTestFiles: Set<String> = []
+        
+        // Scan files in all tested targets
+        for testedTarget in testedTargets {
+            print("[QuarkTestsPlugin] Scanning files in target: \(testedTarget.displayName)")
+            
+            for file in testedTarget.inputFiles where file.type == .source {
+                print("[QuarkTestsPlugin] Checking file: \(file.url.path)")
+                let content = try String(contentsOfFile: file.url.path, encoding: .utf8)
+                
+                // Look for Quark macro usage
+                guard content.contains("#Quark") else { continue }
+                
+                print("[QuarkTestsPlugin] Found Quark macro in: \(file.url.lastPathComponent)")
+                
+                // Extract view information and parameters
+                let viewInfos = extractViewInfo(from: content)
+                
+                for viewInfo in viewInfos {
+                    // Generate tests based on parameters
+                    if viewInfo.parameters.contains(.localize) {
+                        let generator = LocalizationTestGenerator()
+                        let testContent = generator.generateTests(for: viewInfo, target: testedTarget.displayName)
+                        let testFileName = "\(viewInfo.name)L10nTests.swift"
+                        let testFilePath = outputDir.appending(path: testFileName)
+                        
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
+                        generatedTestFiles.insert(testFileName)
+                        
+                        print("[QuarkTestsPlugin] Generate localization tests for \(viewInfo.name)")
+                    }
+                    
+                    if viewInfo.parameters.contains(.snapshot) {
+                        let generator = SnapshotTestGenerator(directory: context.xcodeProject.directoryURL.path)
+                        let testContent = generator.generateTests(for: viewInfo, target: testedTarget.displayName)
+                        let testFileName = "\(viewInfo.name)SnapshotTests.swift"
+                        let testFilePath = outputDir.appending(path: testFileName)
+                        
+                        try testContent.write(to: URL(fileURLWithPath: testFilePath.path()), atomically: true, encoding: .utf8)
+                        generatedTestFiles.insert(testFileName)
+                        print("[QuarkTestsPlugin] Generate snapshot tests for \(viewInfo.name)")
+                    }
+                }
+            }
+        }
+        
+        // Return a single prebuild command that generates all test files
+        return [
+            .prebuildCommand(
+                displayName: "Generating Quark Tests",
+                executable: URL(fileURLWithPath: "/bin/echo"),
+                arguments: ["Quark tests generated successfully"],
+                outputFilesDirectory: outputDir
+            )
+        ]
+    }
+    
+    private func cleanupExistingTestFilesForXcode(in outputURL: URL) {
+        let fileManager = FileManager.default
+        
+        print("[QuarkTestsPlugin] Starting Xcode cleanup in directory: \(outputURL.path)")
+        
+        do {
+            let existingFiles = try fileManager.contentsOfDirectory(at: outputURL, includingPropertiesForKeys: nil)
+            print("[QuarkTestsPlugin] Found \(existingFiles.count) files in directory")
+            
+            for fileURL in existingFiles {
+                let fileName = fileURL.lastPathComponent
+                print("[QuarkTestsPlugin] Checking file: \(fileName)")
+                // Only remove files that match our generated test file patterns
+                if fileName.hasSuffix("L10nTests.swift") || fileName.hasSuffix("SnapshotTests.swift") {
+                    try fileManager.removeItem(at: fileURL)
+                    print("[QuarkTestsPlugin] Removed existing test file: \(fileName)")
+                } else {
+                    print("[QuarkTestsPlugin] Skipping file (doesn't match pattern): \(fileName)")
+                }
+            }
+        } catch {
+            print("[QuarkTestsPlugin] Error cleaning up existing test files: \(error)")
+        }
+    }
+    
+    private func findTestedTargetsForXcode(in project: XcodeProjectPlugin.XcodeProject, for testTarget: XcodeProjectPlugin.XcodeTarget) -> [XcodeProjectPlugin.XcodeTarget] {
+        var testedTargets: [XcodeProjectPlugin.XcodeTarget] = []
+        
+        // Get all dependencies of the test target
+        for dependency in testTarget.dependencies {
+            switch dependency {
+            case .target(let target):
+                testedTargets.append(target)
+            case .product(let product):
+                // For Xcode projects, we might need to find the target differently
+                // This is a simplified approach
+                if let target = project.targets.first(where: { $0.displayName == product.name }) {
+                    testedTargets.append(target)
+                }
+            @unknown default:
+                assertionFailure("Didn't expect to have dependency \(dependency)")
+            }
+        }
+        
+        return testedTargets
+    }
+}
+#endif

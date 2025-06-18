@@ -34,7 +34,7 @@ struct LocalizationTestGenerator: TestGenerator {
                 }
 
                 let supportedLocales = bundle.localizations
-                let sut = \(viewInfo.initialization)
+                let sut = AnyView(\(viewInfo.initialization))
 
                 do {
                     let parent = try sut.inspect().implicitAnyView()

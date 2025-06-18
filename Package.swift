@@ -58,6 +58,13 @@ let package = Package(
         .plugin(
             name: "QuarkTestsPlugin",
             capability: .buildTool()
+        ),
+        .testTarget(
+            name: "QuarkTests",
+            dependencies: [
+                "Quark",
+                "QuarkTesting"
+            ]
         )
     ]
 )
