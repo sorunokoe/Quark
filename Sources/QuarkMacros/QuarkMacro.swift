@@ -7,7 +7,7 @@ public struct QuarkMacro: ExpressionMacro {
         in context: some MacroExpansionContext
     ) throws -> ExprSyntax {
         // Get the view expression from the macro arguments
-        guard let viewExpr = node.arguments.last?.expression else {
+        guard let viewExpr = node.argumentList.last?.expression else {
             throw MacroError.noViewExpression
         }
         
