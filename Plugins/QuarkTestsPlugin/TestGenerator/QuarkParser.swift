@@ -7,125 +7,125 @@
 
 import Foundation
 
+struct ViewInfo: Equatable {
+    let name: String
+    let initialization: String
+    let parameters: [QuarkParameters]
+}
+
+enum QuarkParameters: String, CaseIterable, Equatable {
+    case localize
+    case snapshot
+}
+
+extension ViewInfo: CustomDebugStringConvertible {
+    var debugDescription: String {
+        "ViewInfo(name: \(name), initialization: \(initialization), parameters: \(parameters))"
+    }
+}
+
 final class QuarkParser {
     func extractViewInfo(from content: String) -> [ViewInfo] {
-        var viewInfos: [ViewInfo] = []
         let lines = content.components(separatedBy: .newlines)
-        
-        print("[QuarkTestsPlugin] Extracting view info from content with \(lines.count) lines")
-        
-        // First, find all struct definitions
-        var structDefinitions: [(name: String, lineIndex: Int)] = []
-        for (index, line) in lines.enumerated() {
-            if line.contains("struct") && line.contains(": View") {
-                let components = line.components(separatedBy: "struct")
-                if components.count > 1 {
-                    let nameComponent = components[1].components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
-                    structDefinitions.append((name: nameComponent, lineIndex: index))
-                    print("[QuarkTestsPlugin] Found struct definition: \(nameComponent) at line \(index)")
+        let structDefinitions = parseStructDefinitions(from: lines)
+        return parseMacroUsages(from: lines, structDefinitions: structDefinitions)
+    }
+
+    /// Parses all struct definitions conforming to View
+    internal func parseStructDefinitions(from lines: [String]) -> [(name: String, lineIndex: Int)] {
+        lines.enumerated().compactMap { (index, line) in
+            guard line.contains("struct"), line.contains(": View") else { return nil }
+            let components = line.components(separatedBy: "struct")
+            guard components.count > 1 else { return nil }
+            if let nameComponent = components[1].components(separatedBy: ":").first?.trimmingCharacters(in: .whitespaces) {
+                return (name: nameComponent, lineIndex: index)
+            } else {
+                return nil
+            }
+        }
+    }
+
+    /// Parses all #Quark macro usages and extracts ViewInfo
+    internal func parseMacroUsages(from lines: [String], structDefinitions: [(name: String, lineIndex: Int)]) -> [ViewInfo] {
+        let content = lines.joined(separator: "\n")
+        var viewInfos: [ViewInfo] = []
+        let regex = try! NSRegularExpression(pattern: "#Quark\\s*\\(([^)]*)\\)\\s*\\{", options: [])
+        let nsContent = content as NSString
+        let matches = regex.matches(in: content, options: [], range: NSRange(location: 0, length: nsContent.length))
+        for match in matches {
+            let paramsRange = match.range(at: 1)
+            let paramsString = nsContent.substring(with: paramsRange)
+            let parameters = extractMacroParameters(from: "[\(paramsString)]")
+            // Find the opening brace
+            let braceStart = match.range.location + match.range.length - 1
+            // Find the matching closing brace and extract content
+            if let (macroContent, _) = extractBracedContent(from: content, start: braceStart) {
+                if let info = makeViewInfo(from: macroContent, parameters: parameters, structDefinitions: structDefinitions) {
+                    viewInfos.append(info)
                 }
             }
         }
-        
-        // Then process macro usages
-        var currentMacroContent: String = ""
-        var isCollectingMacroContent = false
-        var parenthesesCount = 0
-        var currentParameters: [QuarkParameters] = []
-        
-        for (_, line) in lines.enumerated() {
-            if line.contains("#Quark") {
-                print("[QuarkTestsPlugin] Found Quark macro in line: \(line)")
-                isCollectingMacroContent = true
-                currentMacroContent = ""
-                parenthesesCount = 0
-                
-                // Extract parameters from the first line
-                if let paramsRange = line.range(of: "\\[.*?\\]", options: .regularExpression) {
-                    let paramsText = String(line[paramsRange])
-                    print("[QuarkTestsPlugin] Found parameters text: \(paramsText)")
-                    currentParameters = extractParameters(from: paramsText)
-                }
-                
-                // Start collecting content after the opening brace
-                if let braceIndex = line.range(of: "{")?.upperBound {
-                    currentMacroContent = String(line[braceIndex...]).trimmingCharacters(in: .whitespaces)
-                    parenthesesCount = 1
-                }
-            } else if isCollectingMacroContent {
-                // Count braces
-                parenthesesCount += line.filter { $0 == "{" }.count - line.filter { $0 == "}" }.count
-                currentMacroContent += "\n" + line
-                
-                // If we've closed all braces, process the content
-                if parenthesesCount == 0 {
-                    print("[QuarkTestsPlugin] Completed macro content: \(currentMacroContent)")
-                    
-                    // Extract the view initialization
-                    let initialization = currentMacroContent
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "^\\s*|\\s*$", with: "", options: .regularExpression)
-                        .replacingOccurrences(of: "\\}\\s*$", with: "", options: .regularExpression) // Remove trailing closing brace
-                    
-                    print("[QuarkTestsPlugin] Extracted initialization: \(initialization)")
-                    
-                    // Extract the view name from the initialization
-                    if let viewName = initialization.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces) {
-                        print("[QuarkTestsPlugin] Looking for struct definition for view: \(viewName)")
-                        
-                        // Find the matching struct definition
-                        if let structDef = structDefinitions.first(where: { $0.name == viewName }) {
-                            print("[QuarkTestsPlugin] Found matching struct: \(structDef.name)")
-                            viewInfos.append(ViewInfo(
-                                name: structDef.name,
-                                initialization: initialization,
-                                parameters: currentParameters
-                            ))
-                        } else {
-                            print("[QuarkTestsPlugin] No matching struct found for view: \(viewName)")
-                        }
-                    }
-                    
-                    isCollectingMacroContent = false
-                    currentParameters = []
-                }
-            }
-        }
-        
-        print("[QuarkTestsPlugin] Extracted view info: \(viewInfos)")
         return viewInfos
     }
-    
-    private func extractParameters(from text: String) -> [QuarkParameters] {
-        var parameters: [QuarkParameters] = []
-        
-        // Extract parameters from array syntax
-        if let range = text.range(of: "\\[.*?\\]", options: .regularExpression) {
-            let paramsText = String(text[range])
-                .replacingOccurrences(of: "[", with: "")
-                .replacingOccurrences(of: "]", with: "")
-                .trimmingCharacters(in: .whitespaces)
-            
-            print("[QuarkTestsPlugin] Extracting parameters from: \(paramsText)")
-            
-            let paramStrings = paramsText.components(separatedBy: ",")
-            
-            for param in paramStrings {
-                let trimmedParam = param.trimmingCharacters(in: .whitespaces)
-                print("[QuarkTestsPlugin] Processing parameter: \(trimmedParam)")
-                
-                if trimmedParam.contains(".localize") {
-                    parameters.append(.localize)
-                    print("[QuarkTestsPlugin] Added .localize parameter")
-                }
-                if trimmedParam.contains(".snapshot") {
-                    parameters.append(.snapshot)
-                    print("[QuarkTestsPlugin] Added .snapshot parameter")
+
+    /// Extracts the content between the first `{` at start and its matching `}` (handles nested braces)
+    internal func extractBracedContent(from content: String, start: Int) -> (String, Int)? {
+        var depth = 0
+        let chars = Array(content)
+        var contentStart: Int?
+        for idx in start..<chars.count {
+            if chars[idx] == "{" {
+                depth += 1
+                if contentStart == nil { contentStart = idx + 1 }
+            } else if chars[idx] == "}" {
+                depth -= 1
+                if depth == 0, let startIdx = contentStart {
+                    let macroContent = String(chars[startIdx..<idx])
+                    return (macroContent, idx)
                 }
             }
         }
-        
-        print("[QuarkTestsPlugin] Extracted parameters: \(parameters)")
-        return parameters
+        return nil
+    }
+
+    /// Creates a ViewInfo if the macro content matches a struct definition
+    internal func makeViewInfo(from macroContent: String, parameters: [QuarkParameters], structDefinitions: [(name: String, lineIndex: Int)]) -> ViewInfo? {
+        let initialization = normalizeInitialization(macroContent)
+        guard let viewName = getViewName(from: initialization),
+              let structDef = structDefinitions.first(where: { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) == viewName }) else {
+            return nil
+        }
+        return ViewInfo(name: structDef.name, initialization: initialization, parameters: parameters)
+    }
+
+    /// Extracts the view name from an initialization string
+    internal func getViewName(from initialization: String) -> String? {
+        initialization.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Extracts macro parameters from a #Quark macro line
+    internal func extractMacroParameters(from line: String) -> [QuarkParameters] {
+        guard let paramsRange = line.range(of: "\\[.*?\\]", options: .regularExpression) else { return [] }
+        let paramsText = String(line[paramsRange])
+            .replacingOccurrences(of: "[", with: "")
+            .replacingOccurrences(of: "]", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return paramsText
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .compactMap { value in
+                QuarkParameters.allCases.first(where: { quarkParam in
+                    value == ".\(quarkParam)"
+                })
+            }
+    }
+
+    /// Normalizes the initialization string (trims, removes newlines, joins lines)
+    internal func normalizeInitialization(_ initialization: String) -> String {
+        initialization
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .joined()
     }
 }
