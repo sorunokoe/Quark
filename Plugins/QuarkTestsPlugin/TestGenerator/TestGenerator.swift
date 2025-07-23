@@ -15,4 +15,3 @@ enum QuarkParameters {
     case localize
     case snapshot
 }
-

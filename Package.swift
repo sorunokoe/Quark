@@ -47,6 +47,9 @@ let package = Package(
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
             ]
         ),
+        .target(
+            name: "QuarkHelper"
+        ),
         .macro(
             name: "QuarkMacros",
             dependencies: [
@@ -63,7 +66,8 @@ let package = Package(
             name: "QuarkTests",
             dependencies: [
                 "Quark",
-                "QuarkTesting"
+                "QuarkTesting",
+                "QuarkHelper"
             ]
         )
     ]
